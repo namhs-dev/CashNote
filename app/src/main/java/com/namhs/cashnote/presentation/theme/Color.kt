@@ -1,4 +1,4 @@
-package com.namhs.cashnote.ui.theme
+package com.namhs.cashnote.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 

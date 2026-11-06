@@ -11,7 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.namhs.cashnote.ui.theme.CashNoteTheme
+import com.namhs.cashnote.presentation.theme.CashNoteTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
