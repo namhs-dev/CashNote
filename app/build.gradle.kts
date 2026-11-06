@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.ktlint)
 }
 
 android {
@@ -36,6 +37,11 @@ android {
     buildFeatures {
         compose = true
     }
+}
+
+ktlint {
+    version.set(libs.versions.ktlintEngine.get())
+    android.set(true)
 }
 
 dependencies {
