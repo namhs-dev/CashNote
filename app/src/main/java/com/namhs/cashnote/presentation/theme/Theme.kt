@@ -47,6 +47,7 @@ fun CashNoteTheme(
         }
 
         darkTheme -> DarkColorScheme
+
         else -> LightColorScheme
     }
 
