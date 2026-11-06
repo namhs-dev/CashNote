@@ -55,7 +55,7 @@ com.namhs.cashnote
 ## Git 규칙
 - 브랜치: `feature/<이슈번호>-<설명>`, `fix/<이슈번호>-<설명>`. 항상 `dev`에서 분기한다.
 - `main`, `dev`에 직접 커밋하거나 push하지 않는다.
-- 커밋 메시지: `<type>: <설명> (#이슈번호)`, type은 feat / fix / refactor / chore / docs / test.
+- 커밋 메시지: `<type>: <설명> (#이슈번호)`, type은 feat / fix / refactor / style / chore / docs / test.
 - PR 대상은 `dev`, 본문 첫 줄에 `Closes #<이슈번호>`.
 
 ## 작업 방식 (중요)
