@@ -5,14 +5,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.namhs.cashnote.R
 
 // 라이트/다크 팔레트와 금액 표시를 한눈에 확인하기 위한 Preview
 @Preview(name = "Light", uiMode = Configuration.UI_MODE_NIGHT_NO)
@@ -29,7 +34,14 @@ private fun ThemePreview() {
                 ColorSwatch("primary", scheme.primary, scheme.onPrimary)
                 ColorSwatch("primaryContainer", scheme.primaryContainer, scheme.onPrimaryContainer)
                 ColorSwatch("secondary", scheme.secondary, scheme.onSecondary)
+                ColorSwatch(
+                    "secondaryContainer",
+                    scheme.secondaryContainer,
+                    scheme.onSecondaryContainer
+                )
                 ColorSwatch("tertiary", scheme.tertiary, scheme.onTertiary)
+                ColorSwatch("surfaceContainer", scheme.surfaceContainer, scheme.onSurface)
+                ColorSwatch("inverseSurface", scheme.inverseSurface, scheme.inverseOnSurface)
                 Text("1,250,000원", style = MaterialTheme.typography.headlineMedium)
                 Text(
                     text = "+3,000,000",
@@ -41,6 +53,31 @@ private fun ThemePreview() {
                     color = CashNoteTheme.colors.expense,
                     style = MaterialTheme.typography.titleMedium
                 )
+                // 하단 바: 배경 surfaceContainer, 선택 표시 secondaryContainer
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = true,
+                        onClick = {},
+                        icon = {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_home),
+                                contentDescription = null
+                            )
+                        },
+                        label = { Text("내역") }
+                    )
+                    NavigationBarItem(
+                        selected = false,
+                        onClick = {},
+                        icon = {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_bar_chart),
+                                contentDescription = null
+                            )
+                        },
+                        label = { Text("통계") }
+                    )
+                }
             }
         }
     }
