@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">CashNote</string>
+
+    <string name="home_title">내역</string>
+    <string name="statistics_title">통계</string>
+    <string name="transaction_edit_title">내역 입력</string>
+    <string name="action_add_transaction">내역 추가</string>
+    <string name="action_navigate_back">뒤로 가기</string>
 </resources>
