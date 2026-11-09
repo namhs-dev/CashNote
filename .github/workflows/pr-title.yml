@@ -1,0 +1,28 @@
+name: PR Title
+
+# PR 제목이 squash 머지 후 dev의 커밋 메시지가 되므로 형식을 검사한다.
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: PR 제목 형식 검사
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "PR 제목: $TITLE"
+          if [[ ! "$TITLE" =~ ^(feat|fix|refactor|style|chore|docs|test):\ .+ ]]; then
+            echo "::error::PR 제목은 '<type>: <설명>' 형식이어야 합니다. type: feat, fix, refactor, style, chore, docs, test"
+            exit 1
+          fi
+          if [[ "$TITLE" =~ \(#[0-9]+\)$ ]]; then
+            echo "::error::PR 제목 끝에 이슈 번호를 넣지 마세요. squash 머지 시 PR 번호가 자동으로 붙습니다."
+            exit 1
+          fi
+          echo "OK"

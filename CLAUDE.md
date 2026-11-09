@@ -57,6 +57,8 @@ com.namhs.cashnote
 - `main`, `dev`에 직접 커밋하거나 push하지 않는다.
 - 커밋 메시지: `<type>: <설명> (#이슈번호)`, type은 feat / fix / refactor / style / chore / docs / test.
 - PR 대상은 `dev`, 본문 첫 줄에 `Closes #<이슈번호>`.
+- PR 제목: `<type>: <설명>` 형식으로 쓰고, 이슈 번호를 넣지 않는다. squash 머지 시 PR 제목이 dev 커밋 메시지가 되고 PR 번호는 GitHub이 붙인다. CI(PR Title)가 검사한다.
+- 이슈 제목: type 접두어 없이 할 일만 쓴다. 종류는 라벨로 구분한다.
 
 ## 작업 방식 (중요)
 - 작업은 아주 작은 단위로 나눠서 진행한다. 한 번에 한 단계만 한다.
