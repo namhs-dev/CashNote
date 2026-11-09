@@ -1,4 +1,4 @@
-package com.namhs.cashnote.data.local.seed
+package com.namhs.cashnote.data.local.database
 
 import com.namhs.cashnote.data.local.entity.CategoryEntity
 import com.namhs.cashnote.domain.model.TransactionType
