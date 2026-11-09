@@ -1,0 +1,20 @@
+package com.namhs.cashnote.domain.repository
+
+import com.namhs.cashnote.domain.model.Transaction
+import java.time.YearMonth
+import kotlinx.coroutines.flow.Flow
+
+interface TransactionRepository {
+    /** [month]에 해당하는 거래를 최신순으로 구독한다. */
+    fun observeTransactions(month: YearMonth): Flow<List<Transaction>>
+
+    /**
+     * 거래를 추가하고 저장된 id를 반환한다.
+     * id가 0이면 새 id가 생성되고, 0이 아니면 그 id로 저장한다(삭제 실행 취소 시 사용).
+     */
+    suspend fun add(transaction: Transaction): Long
+
+    suspend fun update(transaction: Transaction)
+
+    suspend fun delete(transaction: Transaction)
+}
