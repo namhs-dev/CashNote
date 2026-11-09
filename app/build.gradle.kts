@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.hilt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.androidx.room)
 }
 
 android {
@@ -38,6 +39,11 @@ android {
     buildFeatures {
         compose = true
     }
+}
+
+// Room 스키마를 버전별 JSON으로 내보내 Git에 커밋한다. migration 작성·테스트의 기준이 된다.
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 ktlint {
