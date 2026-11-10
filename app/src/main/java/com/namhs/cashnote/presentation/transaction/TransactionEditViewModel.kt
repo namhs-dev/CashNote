@@ -3,7 +3,6 @@ package com.namhs.cashnote.presentation.transaction
 import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.usecase.AddTransactionUseCase
@@ -11,7 +10,6 @@ import com.namhs.cashnote.domain.usecase.GetCategoriesUseCase
 import com.namhs.cashnote.domain.usecase.GetTransactionUseCase
 import com.namhs.cashnote.domain.usecase.UpdateTransactionUseCase
 import com.namhs.cashnote.presentation.base.MviViewModel
-import com.namhs.cashnote.presentation.navigation.CashNoteDestination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Instant
 import java.time.LocalDate
@@ -33,8 +31,8 @@ class TransactionEditViewModel @Inject constructor(
 ) : MviViewModel<TransactionEditUiState, TransactionEditIntent, TransactionEditSideEffect>(
     TransactionEditUiState(date = LocalDate.now())
 ) {
-    private val transactionId =
-        savedStateHandle.toRoute<CashNoteDestination.TransactionEdit>().transactionId
+    // toRoute()는 내부에서 Android Bundle을 써서 JVM 단위 테스트에서 동작하지 않으므로 키로 직접 읽는다
+    private val transactionId: Long = savedStateHandle.get<Long>(ARG_TRANSACTION_ID) ?: 0L
 
     // 수정 모드에서 불러온 원본. 저장 시 id와 createdAt을 유지하는 데 쓴다
     private var original: Transaction? = null
@@ -159,8 +157,11 @@ class TransactionEditViewModel @Inject constructor(
         postSideEffect(TransactionEditSideEffect.ShowMessage(messageRes))
     }
 
-    private companion object {
+    companion object {
+        /** 이동 인자 키. CashNoteDestination.TransactionEdit의 프로퍼티 이름과 같아야 한다 */
+        internal const val ARG_TRANSACTION_ID = "transactionId"
+
         // 999,999,999,999원까지 입력할 수 있다
-        const val MAX_AMOUNT_DIGITS = 12
+        private const val MAX_AMOUNT_DIGITS = 12
     }
 }
