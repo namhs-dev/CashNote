@@ -42,6 +42,10 @@ com.namhs.cashnote
 - UseCase는 `operator fun invoke()` 하나만 노출한다.
 - MVI Contract: 화면마다 `UiState`(data class, 불변), `Intent`(sealed interface), `SideEffect`(sealed interface, 일회성 이벤트).
 - State는 `StateFlow`, SideEffect는 `Channel` → `Flow`로 노출한다.
+- 화면 ViewModel은 `presentation/base/MviViewModel`을 상속하고, Intent는 `onIntent()` 하나로 받는다.
+- Contract는 `presentation/<feature>/<Feature>Contract.kt` 한 파일에 `<Feature>UiState` / `<Feature>Intent` / `<Feature>SideEffect`로 둔다.
+- State는 `setState { copy(...) }`로만 바꾼다. 내비게이션·스낵바 같은 일회성 이벤트는 State에 넣지 않고 `postSideEffect()`로 보낸다.
+- Route는 State를 `collectAsStateWithLifecycle()`로 구독하고, SideEffect는 `LaunchedEffect`에서 수집한다. Screen에는 State와 `onIntent` 람다만 넘긴다.
 - Room이 유일한 데이터 소스다. 네트워크 응답은 Room에 저장하고, UI는 Room Flow만 구독한다.
 - Entity ↔ Domain, DTO ↔ Entity 변환은 data 계층의 mapper에서만 한다.
 - API 키는 `local.properties` → `BuildConfig`로 주입한다. 키를 코드나 커밋에 넣지 않는다.
