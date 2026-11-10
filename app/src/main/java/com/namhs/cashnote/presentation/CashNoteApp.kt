@@ -19,7 +19,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.namhs.cashnote.presentation.home.HomeScreen
+import com.namhs.cashnote.presentation.home.HomeRoute
 import com.namhs.cashnote.presentation.navigation.CashNoteDestination
 import com.namhs.cashnote.presentation.navigation.TopLevelDestination
 import com.namhs.cashnote.presentation.statistics.StatisticsScreen
@@ -64,9 +64,9 @@ fun CashNoteApp(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable<CashNoteDestination.Home> {
-                HomeScreen(
-                    onAddTransactionClick = {
-                        navController.navigate(CashNoteDestination.TransactionEdit())
+                HomeRoute(
+                    onNavigateToEdit = { transactionId ->
+                        navController.navigate(CashNoteDestination.TransactionEdit(transactionId))
                     }
                 )
             }
