@@ -23,7 +23,7 @@ import com.namhs.cashnote.presentation.home.HomeScreen
 import com.namhs.cashnote.presentation.navigation.CashNoteDestination
 import com.namhs.cashnote.presentation.navigation.TopLevelDestination
 import com.namhs.cashnote.presentation.statistics.StatisticsScreen
-import com.namhs.cashnote.presentation.transaction.TransactionEditScreen
+import com.namhs.cashnote.presentation.transaction.TransactionEditRoute
 
 @Composable
 fun CashNoteApp(modifier: Modifier = Modifier) {
@@ -72,7 +72,7 @@ fun CashNoteApp(modifier: Modifier = Modifier) {
             }
             composable<CashNoteDestination.Statistics> { StatisticsScreen() }
             composable<CashNoteDestination.TransactionEdit> {
-                TransactionEditScreen(onBackClick = { navController.navigateUp() })
+                TransactionEditRoute(onBack = { navController.navigateUp() })
             }
         }
     }
