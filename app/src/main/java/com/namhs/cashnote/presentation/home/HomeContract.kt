@@ -1,5 +1,6 @@
 package com.namhs.cashnote.presentation.home
 
+import androidx.annotation.StringRes
 import com.namhs.cashnote.domain.model.TransactionWithCategory
 import java.time.LocalDate
 import java.time.YearMonth
@@ -25,10 +26,22 @@ sealed interface HomeIntent {
     data object AddClicked : HomeIntent
 
     data class TransactionClicked(val transactionId: Long) : HomeIntent
+
+    /** 항목을 밀어 삭제 */
+    data class DeleteRequested(val transactionId: Long) : HomeIntent
+
+    /** 스낵바의 실행 취소. 마지막으로 삭제한 거래를 되돌린다 */
+    data object UndoDeleteClicked : HomeIntent
 }
 
 /** 홈 화면의 일회성 이벤트 */
 sealed interface HomeSideEffect {
     /** 입력·수정 화면으로 이동한다. 0이면 새 거래 */
     data class NavigateToEdit(val transactionId: Long) : HomeSideEffect
+
+    /** 삭제 완료. 실행 취소 스낵바를 띄운다 */
+    data object ShowDeleteUndo : HomeSideEffect
+
+    /** 삭제·복구 실패 등 사용자에게 알릴 메시지 */
+    data class ShowMessage(@StringRes val messageRes: Int) : HomeSideEffect
 }

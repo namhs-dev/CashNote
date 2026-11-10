@@ -25,8 +25,14 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,6 +59,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.launch
 
 /** ViewModel과 [HomeScreen]을 연결한다 */
 @Composable
@@ -60,23 +68,53 @@ fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val resources = LocalResources.current
 
     LaunchedEffect(viewModel) {
         viewModel.sideEffect.collect { effect ->
             when (effect) {
                 is HomeSideEffect.NavigateToEdit -> onNavigateToEdit(effect.transactionId)
+
+                // 스낵바가 닫힐 때까지 다음 이벤트 처리가 막히지 않도록 따로 띄운다
+                HomeSideEffect.ShowDeleteUndo -> launch {
+                    // 연속 삭제 시 이전 스낵바를 닫는다. 실행 취소는 마지막 삭제에만 적용된다
+                    snackbarHostState.currentSnackbarData?.dismiss()
+                    val result = snackbarHostState.showSnackbar(
+                        message = resources.getString(R.string.home_deleted_message),
+                        actionLabel = resources.getString(R.string.action_undo),
+                        duration = SnackbarDuration.Short
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        viewModel.onIntent(HomeIntent.UndoDeleteClicked)
+                    }
+                }
+
+                is HomeSideEffect.ShowMessage -> launch {
+                    snackbarHostState.showSnackbar(resources.getString(effect.messageRes))
+                }
             }
         }
     }
 
-    HomeScreen(state = state, onIntent = viewModel::onIntent)
+    HomeScreen(
+        state = state,
+        onIntent = viewModel::onIntent,
+        snackbarHostState = snackbarHostState
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(state: HomeUiState, onIntent: (HomeIntent) -> Unit, modifier: Modifier = Modifier) {
+fun HomeScreen(
+    state: HomeUiState,
+    onIntent: (HomeIntent) -> Unit,
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
+) {
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -114,6 +152,7 @@ fun HomeScreen(state: HomeUiState, onIntent: (HomeIntent) -> Unit, modifier: Mod
             else -> TransactionList(
                 groups = state.dailyGroups,
                 onItemClick = { onIntent(HomeIntent.TransactionClicked(it)) },
+                onItemDelete = { onIntent(HomeIntent.DeleteRequested(it)) },
                 modifier = contentModifier
             )
         }
@@ -125,6 +164,7 @@ fun HomeScreen(state: HomeUiState, onIntent: (HomeIntent) -> Unit, modifier: Mod
 private fun TransactionList(
     groups: List<DailyTransactions>,
     onItemClick: (Long) -> Unit,
+    onItemDelete: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val headerPattern = stringResource(R.string.home_date_header_pattern)
@@ -145,9 +185,39 @@ private fun TransactionList(
                 )
             }
             items(items = group.items, key = { it.transaction.id }) { item ->
-                TransactionRow(item = item, onClick = { onItemClick(item.transaction.id) })
+                SwipeToDeleteBox(onDelete = { onItemDelete(item.transaction.id) }) {
+                    TransactionRow(item = item, onClick = { onItemClick(item.transaction.id) })
+                }
             }
         }
+    }
+}
+
+/** 오른쪽에서 왼쪽으로 끝까지 밀면 [onDelete]를 호출한다 */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeToDeleteBox(onDelete: () -> Unit, content: @Composable () -> Unit) {
+    SwipeToDismissBox(
+        state = rememberSwipeToDismissBoxState(),
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 24.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_delete),
+                    contentDescription = stringResource(R.string.action_delete),
+                    tint = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        },
+        enableDismissFromStartToEnd = false,
+        onDismiss = { onDelete() }
+    ) {
+        content()
     }
 }
 
@@ -155,8 +225,10 @@ private fun TransactionList(
 private fun TransactionRow(item: TransactionWithCategory, onClick: () -> Unit) {
     val transaction = item.transaction
     Row(
+        // 밀 때 뒤의 삭제 배경이 비치지 않도록 앞면에 배경을 깐다
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically

@@ -9,6 +9,10 @@
     <string name="home_amount_expense">-%1$s원</string>
     <string name="home_empty_title">이번 달 내역이 없습니다</string>
     <string name="home_empty_description">+ 버튼으로 내역을 추가해 보세요</string>
+    <string name="home_deleted_message">내역을 삭제했습니다</string>
+    <string name="home_delete_failed">삭제하지 못했습니다</string>
+    <string name="action_undo">실행 취소</string>
+    <string name="action_delete">삭제</string>
     <string name="statistics_title">통계</string>
     <string name="transaction_edit_title">내역 입력</string>
     <string name="action_add_transaction">내역 추가</string>
