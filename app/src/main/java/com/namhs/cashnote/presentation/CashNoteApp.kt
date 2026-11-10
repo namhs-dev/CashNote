@@ -66,7 +66,7 @@ fun CashNoteApp(modifier: Modifier = Modifier) {
             composable<CashNoteDestination.Home> {
                 HomeScreen(
                     onAddTransactionClick = {
-                        navController.navigate(CashNoteDestination.TransactionEdit)
+                        navController.navigate(CashNoteDestination.TransactionEdit())
                     }
                 )
             }

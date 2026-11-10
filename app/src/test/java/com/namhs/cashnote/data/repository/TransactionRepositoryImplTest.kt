@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class TransactionRepositoryImplTest {
@@ -74,6 +75,20 @@ class TransactionRepositoryImplTest {
     }
 
     @Test
+    fun getTransaction_mapsEntityToDomain() = runBlocking {
+        dao.entities = listOf(entity)
+
+        assertEquals(domain, repository.getTransaction(7))
+    }
+
+    @Test
+    fun getTransaction_returnsNullWhenMissing() = runBlocking {
+        dao.entities = listOf(entity)
+
+        assertNull(repository.getTransaction(99))
+    }
+
+    @Test
     fun add_insertsEntityAndReturnsId() = runBlocking {
         dao.nextId = 42
 
@@ -114,6 +129,8 @@ private class FakeTransactionDao : TransactionDao {
         lastRange = start to endExclusive
         return flowOf(entities)
     }
+
+    override suspend fun getById(id: Long): TransactionEntity? = entities.find { it.id == id }
 
     override suspend fun insert(transaction: TransactionEntity): Long {
         inserted += transaction

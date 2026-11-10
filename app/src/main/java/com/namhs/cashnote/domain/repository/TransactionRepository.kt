@@ -8,6 +8,9 @@ interface TransactionRepository {
     /** [month]에 해당하는 거래를 최신순으로 구독한다. */
     fun observeTransactions(month: YearMonth): Flow<List<Transaction>>
 
+    /** id로 거래를 조회한다. 없으면 null */
+    suspend fun getTransaction(id: Long): Transaction?
+
     /**
      * 거래를 추가하고 저장된 id를 반환한다.
      * id가 0이면 새 id가 생성되고, 0이 아니면 그 id로 저장한다(삭제 실행 취소 시 사용).

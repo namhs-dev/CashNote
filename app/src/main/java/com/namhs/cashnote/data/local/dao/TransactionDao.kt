@@ -24,6 +24,10 @@ interface TransactionDao {
     )
     fun observeByDateRange(start: LocalDate, endExclusive: LocalDate): Flow<List<TransactionEntity>>
 
+    /** id로 거래 하나를 조회한다. 없으면 null */
+    @Query("SELECT * FROM transactions WHERE id = :id")
+    suspend fun getById(id: Long): TransactionEntity?
+
     /** 거래를 추가하고 생성된 id를 반환한다. */
     @Insert
     suspend fun insert(transaction: TransactionEntity): Long

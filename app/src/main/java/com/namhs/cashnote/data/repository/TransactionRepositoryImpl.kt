@@ -20,6 +20,9 @@ class TransactionRepositoryImpl @Inject constructor(private val transactionDao: 
             .map { entities -> entities.map { it.toDomain() } }
     }
 
+    override suspend fun getTransaction(id: Long): Transaction? =
+        transactionDao.getById(id)?.toDomain()
+
     override suspend fun add(transaction: Transaction): Long =
         transactionDao.insert(transaction.toEntity())
 

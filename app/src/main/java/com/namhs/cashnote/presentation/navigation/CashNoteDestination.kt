@@ -12,7 +12,7 @@ sealed interface CashNoteDestination {
     @Serializable
     data object Statistics : CashNoteDestination
 
-    // 홈 FAB에서 여는 내역 입력 화면 (탭 아님)
+    // 내역 입력·수정 화면 (탭 아님). transactionId가 0이면 새 거래, 아니면 그 거래를 수정한다
     @Serializable
-    data object TransactionEdit : CashNoteDestination
+    data class TransactionEdit(val transactionId: Long = 0) : CashNoteDestination
 }
