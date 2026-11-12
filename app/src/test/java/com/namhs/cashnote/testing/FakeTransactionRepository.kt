@@ -1,5 +1,6 @@
 package com.namhs.cashnote.testing
 
+import com.namhs.cashnote.domain.model.CategoryAmount
 import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
@@ -42,6 +43,19 @@ class FakeTransactionRepository(initial: List<Transaction> = emptyList()) : Tran
                 expense = list.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
             )
         }
+
+    /** 실제 DB 쿼리처럼 해당 월·유형의 거래를 카테고리별로 합산해 금액 내림차순, 같으면 id 순으로 돌려준다 */
+    override fun observeCategoryTotals(
+        month: YearMonth,
+        type: TransactionType
+    ): Flow<List<CategoryAmount>> = observeTransactions(month).map { list ->
+        list.filter { it.type == type }
+            .groupBy { it.categoryId }
+            .map { (categoryId, items) -> CategoryAmount(categoryId, items.sumOf { it.amount }) }
+            .sortedWith(
+                compareByDescending<CategoryAmount> { it.amount }.thenBy { it.categoryId }
+            )
+    }
 
     override suspend fun getTransaction(id: Long): Transaction? =
         transactions.value.find { it.id == id }

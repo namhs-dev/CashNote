@@ -4,8 +4,10 @@ import com.namhs.cashnote.data.local.dao.TransactionDao
 import com.namhs.cashnote.data.repository.mapper.toDomain
 import com.namhs.cashnote.data.repository.mapper.toEntity
 import com.namhs.cashnote.data.repository.mapper.toMonthlySummary
+import com.namhs.cashnote.domain.model.CategoryAmount
 import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
+import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.repository.TransactionRepository
 import java.time.LocalDate
 import java.time.YearMonth
@@ -25,6 +27,15 @@ class TransactionRepositoryImpl @Inject constructor(private val transactionDao: 
         val (start, endExclusive) = month.toDateRange()
         return transactionDao.observeTotalsByType(start, endExclusive)
             .map { totals -> totals.toMonthlySummary() }
+    }
+
+    override fun observeCategoryTotals(
+        month: YearMonth,
+        type: TransactionType
+    ): Flow<List<CategoryAmount>> {
+        val (start, endExclusive) = month.toDateRange()
+        return transactionDao.observeTotalsByCategory(type, start, endExclusive)
+            .map { totals -> totals.map { it.toDomain() } }
     }
 
     override suspend fun getTransaction(id: Long): Transaction? =
