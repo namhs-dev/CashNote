@@ -1,7 +1,9 @@
 package com.namhs.cashnote.data.repository
 
 import com.namhs.cashnote.data.local.dao.TransactionDao
+import com.namhs.cashnote.data.local.dao.TypeTotal
 import com.namhs.cashnote.data.local.entity.TransactionEntity
+import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import java.time.Instant
@@ -111,12 +113,51 @@ class TransactionRepositoryImplTest {
 
         assertEquals(listOf(entity), dao.deleted)
     }
+
+    // 월 합계
+
+    @Test
+    fun observeMonthlySummary_queriesFirstDayToNextMonthFirstDay() {
+        repository.observeMonthlySummary(YearMonth.of(2026, 11))
+
+        assertEquals(LocalDate.of(2026, 11, 1) to LocalDate.of(2026, 12, 1), dao.lastRange)
+    }
+
+    @Test
+    fun observeMonthlySummary_mapsTotalsByType() = runBlocking {
+        dao.totals = listOf(
+            TypeTotal(TransactionType.INCOME, 100_000),
+            TypeTotal(TransactionType.EXPENSE, 30_000)
+        )
+
+        val result = repository.observeMonthlySummary(YearMonth.of(2026, 11)).first()
+
+        assertEquals(MonthlySummary(income = 100_000, expense = 30_000), result)
+        assertEquals(70_000L, result.balance)
+    }
+
+    @Test
+    fun observeMonthlySummary_missingType_isZero() = runBlocking {
+        dao.totals = listOf(TypeTotal(TransactionType.EXPENSE, 30_000))
+
+        val result = repository.observeMonthlySummary(YearMonth.of(2026, 11)).first()
+
+        assertEquals(MonthlySummary(income = 0, expense = 30_000), result)
+    }
+
+    @Test
+    fun observeMonthlySummary_noTransactions_isZero() = runBlocking {
+        val result = repository.observeMonthlySummary(YearMonth.of(2026, 11)).first()
+
+        assertEquals(MonthlySummary(), result)
+    }
 }
 
 /** 호출 인자를 기록하는 가짜 DAO */
 private class FakeTransactionDao : TransactionDao {
     var lastRange: Pair<LocalDate, LocalDate>? = null
     var entities: List<TransactionEntity> = emptyList()
+    var totals: List<TypeTotal> = emptyList()
     var nextId: Long = 1
     val inserted = mutableListOf<TransactionEntity>()
     val updated = mutableListOf<TransactionEntity>()
@@ -128,6 +169,14 @@ private class FakeTransactionDao : TransactionDao {
     ): Flow<List<TransactionEntity>> {
         lastRange = start to endExclusive
         return flowOf(entities)
+    }
+
+    override fun observeTotalsByType(
+        start: LocalDate,
+        endExclusive: LocalDate
+    ): Flow<List<TypeTotal>> {
+        lastRange = start to endExclusive
+        return flowOf(totals)
     }
 
     override suspend fun getById(id: Long): TransactionEntity? = entities.find { it.id == id }

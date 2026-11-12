@@ -1,6 +1,8 @@
 package com.namhs.cashnote.testing
 
+import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
+import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.repository.TransactionRepository
 import java.time.YearMonth
 import kotlinx.coroutines.flow.Flow
@@ -30,6 +32,15 @@ class FakeTransactionRepository(initial: List<Transaction> = emptyList()) : Tran
                         .thenByDescending { it.createdAt }
                         .thenByDescending { it.id }
                 )
+        }
+
+    /** 실제 DB 쿼리처럼 해당 월 거래를 유형별로 합산한다 */
+    override fun observeMonthlySummary(month: YearMonth): Flow<MonthlySummary> =
+        observeTransactions(month).map { list ->
+            MonthlySummary(
+                income = list.filter { it.type == TransactionType.INCOME }.sumOf { it.amount },
+                expense = list.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+            )
         }
 
     override suspend fun getTransaction(id: Long): Transaction? =

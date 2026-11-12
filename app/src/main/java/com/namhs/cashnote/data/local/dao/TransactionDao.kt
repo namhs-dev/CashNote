@@ -24,6 +24,19 @@ interface TransactionDao {
     )
     fun observeByDateRange(start: LocalDate, endExclusive: LocalDate): Flow<List<TransactionEntity>>
 
+    /**
+     * [start] 이상 [endExclusive] 미만 날짜의 거래를 유형별로 합산해 구독한다.
+     * 거래가 없는 유형은 결과에 나오지 않는다.
+     */
+    @Query(
+        """
+        SELECT type, SUM(amount) AS total FROM transactions
+        WHERE date >= :start AND date < :endExclusive
+        GROUP BY type
+        """
+    )
+    fun observeTotalsByType(start: LocalDate, endExclusive: LocalDate): Flow<List<TypeTotal>>
+
     /** id로 거래 하나를 조회한다. 없으면 null */
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getById(id: Long): TransactionEntity?

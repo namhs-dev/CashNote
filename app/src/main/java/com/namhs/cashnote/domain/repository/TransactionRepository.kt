@@ -1,5 +1,6 @@
 package com.namhs.cashnote.domain.repository
 
+import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
 import java.time.YearMonth
 import kotlinx.coroutines.flow.Flow
@@ -7,6 +8,9 @@ import kotlinx.coroutines.flow.Flow
 interface TransactionRepository {
     /** [month]에 해당하는 거래를 최신순으로 구독한다. */
     fun observeTransactions(month: YearMonth): Flow<List<Transaction>>
+
+    /** [month]의 수입·지출 합계를 구독한다. 거래가 없으면 0이다. */
+    fun observeMonthlySummary(month: YearMonth): Flow<MonthlySummary>
 
     /** id로 거래를 조회한다. 없으면 null */
     suspend fun getTransaction(id: Long): Transaction?
