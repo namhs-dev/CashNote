@@ -7,7 +7,7 @@ import java.time.YearMonth
 
 /** 홈 화면 상태 */
 data class HomeUiState(
-    /** 표시 중인 월. 월 이동은 #30에서 추가한다 */
+    /** 표시 중인 월. 이전 달·다음 달 버튼으로 바꾼다 */
     val month: YearMonth,
     val isLoading: Boolean = true,
     /** 날짜별로 묶은 거래. 날짜 최신순 */
@@ -26,6 +26,12 @@ sealed interface HomeIntent {
     data object AddClicked : HomeIntent
 
     data class TransactionClicked(val transactionId: Long) : HomeIntent
+
+    /** 상단 바의 이전 달 버튼 */
+    data object PreviousMonthClicked : HomeIntent
+
+    /** 상단 바의 다음 달 버튼 */
+    data object NextMonthClicked : HomeIntent
 
     /** 항목을 밀어 삭제 */
     data class DeleteRequested(val transactionId: Long) : HomeIntent

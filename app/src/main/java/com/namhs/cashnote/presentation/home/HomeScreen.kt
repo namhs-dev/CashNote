@@ -23,6 +23,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -118,12 +119,10 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        stringResource(
-                            R.string.home_month_title,
-                            state.month.year,
-                            state.month.monthValue
-                        )
+                    MonthSelector(
+                        month = state.month,
+                        onPrevious = { onIntent(HomeIntent.PreviousMonthClicked) },
+                        onNext = { onIntent(HomeIntent.NextMonthClicked) }
                     )
                 }
             )
@@ -154,6 +153,26 @@ fun HomeScreen(
                 onItemClick = { onIntent(HomeIntent.TransactionClicked(it)) },
                 onItemDelete = { onIntent(HomeIntent.DeleteRequested(it)) },
                 modifier = contentModifier
+            )
+        }
+    }
+}
+
+// 상단 바 제목 자리: ‹ 2026년 11월 ›
+@Composable
+private fun MonthSelector(month: YearMonth, onPrevious: () -> Unit, onNext: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = onPrevious) {
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_left),
+                contentDescription = stringResource(R.string.home_previous_month)
+            )
+        }
+        Text(stringResource(R.string.home_month_title, month.year, month.monthValue))
+        IconButton(onClick = onNext) {
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_right),
+                contentDescription = stringResource(R.string.home_next_month)
             )
         }
     }

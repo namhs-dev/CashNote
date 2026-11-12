@@ -3,11 +3,13 @@
 
     <string name="home_title">내역</string>
     <string name="home_month_title">%1$d년 %2$d월</string>
+    <string name="home_previous_month">이전 달</string>
+    <string name="home_next_month">다음 달</string>
     <!-- DateTimeFormatter 패턴. E는 요일 -->
     <string name="home_date_header_pattern">M월 d일 (E)</string>
     <string name="home_amount_income">+%1$s원</string>
     <string name="home_amount_expense">-%1$s원</string>
-    <string name="home_empty_title">이번 달 내역이 없습니다</string>
+    <string name="home_empty_title">이 달의 내역이 없습니다</string>
     <string name="home_empty_description">+ 버튼으로 내역을 추가해 보세요</string>
     <string name="home_deleted_message">내역을 삭제했습니다</string>
     <string name="home_delete_failed">삭제하지 못했습니다</string>

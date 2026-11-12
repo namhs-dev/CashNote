@@ -1,5 +1,6 @@
 package com.namhs.cashnote.presentation.home
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.Transaction
@@ -12,14 +13,24 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.YearMonth
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val getMonthlyTransactions: GetMonthlyTransactionsUseCase,
     private val deleteTransaction: DeleteTransactionUseCase,
     private val addTransaction: AddTransactionUseCase
-) : MviViewModel<HomeUiState, HomeIntent, HomeSideEffect>(HomeUiState(month = YearMonth.now())) {
+) : MviViewModel<HomeUiState, HomeIntent, HomeSideEffect>(
+    // 프로세스가 정리됐다가 복원되면 보던 월에서 다시 시작한다
+    HomeUiState(
+        month = savedStateHandle.get<String>(KEY_MONTH)?.let(YearMonth::parse) ?: YearMonth.now()
+    )
+) {
 
     // 실행 취소용으로 마지막에 삭제한 거래를 보관한다. 새로 삭제하면 덮어쓴다
     private var recentlyDeleted: Transaction? = null
@@ -35,19 +46,34 @@ class HomeViewModel @Inject constructor(
             is HomeIntent.TransactionClicked ->
                 postSideEffect(HomeSideEffect.NavigateToEdit(intent.transactionId))
 
+            HomeIntent.PreviousMonthClicked -> moveMonth(-1)
+
+            HomeIntent.NextMonthClicked -> moveMonth(1)
+
             is HomeIntent.DeleteRequested -> delete(intent.transactionId)
 
             HomeIntent.UndoDeleteClicked -> undoDelete()
         }
     }
 
-    // 지금은 이번 달만 구독한다. 월 이동(#30)이 생기면 month 변경에 따라 다시 구독한다
+    // 월이 바뀔 때마다 그 달의 거래를 다시 구독한다. 이전 달 구독은 flatMapLatest가 취소한다.
+    // 새 달의 데이터가 올 때까지 기존 목록을 그대로 두어 빈 화면이 깜빡이지 않게 한다
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeTransactions() {
         viewModelScope.launch {
-            getMonthlyTransactions(currentState.month).collect { items ->
-                setState { copy(isLoading = false, dailyGroups = items.groupByDate()) }
-            }
+            uiState.map { it.month }
+                .distinctUntilChanged()
+                .flatMapLatest { month -> getMonthlyTransactions(month) }
+                .collect { items ->
+                    setState { copy(isLoading = false, dailyGroups = items.groupByDate()) }
+                }
         }
+    }
+
+    private fun moveMonth(offset: Long) {
+        val month = currentState.month.plusMonths(offset)
+        savedStateHandle[KEY_MONTH] = month.toString()
+        setState { copy(month = month) }
     }
 
     private fun delete(transactionId: Long) {
@@ -82,6 +108,11 @@ class HomeViewModel @Inject constructor(
                 postSideEffect(HomeSideEffect.ShowMessage(R.string.transaction_save_failed))
             }
         }
+    }
+
+    companion object {
+        // 이동 인자가 아니라 이 화면이 직접 저장하는 값. "2026-11" 형식 문자열
+        internal const val KEY_MONTH = "selectedMonth"
     }
 }
 
