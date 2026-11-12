@@ -25,7 +25,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -59,8 +58,9 @@ import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.model.TransactionWithCategory
+import com.namhs.cashnote.presentation.component.MonthSelector
+import com.namhs.cashnote.presentation.component.formatAmount
 import com.namhs.cashnote.presentation.theme.CashNoteTheme
-import java.text.NumberFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -229,26 +229,6 @@ private fun SummaryRow(
     }
 }
 
-// 상단 바 제목 자리: ‹ 2026년 11월 ›
-@Composable
-private fun MonthSelector(month: YearMonth, onPrevious: () -> Unit, onNext: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = onPrevious) {
-            Icon(
-                painter = painterResource(R.drawable.ic_chevron_left),
-                contentDescription = stringResource(R.string.home_previous_month)
-            )
-        }
-        Text(stringResource(R.string.home_month_title, month.year, month.monthValue))
-        IconButton(onClick = onNext) {
-            Icon(
-                painter = painterResource(R.drawable.ic_chevron_right),
-                contentDescription = stringResource(R.string.home_next_month)
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TransactionList(
@@ -359,9 +339,6 @@ private fun AmountText(amount: Long, type: TransactionType) {
         color = color
     )
 }
-
-// 천 단위 구분 기호를 넣는다. 음수면 앞에 - 부호가 붙는다
-private fun formatAmount(amount: Long): String = NumberFormat.getNumberInstance().format(amount)
 
 @Composable
 private fun EmptyContent(modifier: Modifier = Modifier) {
