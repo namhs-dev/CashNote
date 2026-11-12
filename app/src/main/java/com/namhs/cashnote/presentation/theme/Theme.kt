@@ -81,10 +81,17 @@ private val DarkColorScheme = darkColorScheme(
 
 /** Material3 ColorScheme에 없는 CashNote 전용 색 */
 @Immutable
-data class CashNoteColors(val income: Color, val expense: Color)
+data class CashNoteColors(
+    val income: Color,
+    val expense: Color,
+    /** 예산 80% 이상 같은 주의 표시. 100% 초과는 colorScheme.error를 쓴다 */
+    val warning: Color
+)
 
-private val LightCashNoteColors = CashNoteColors(income = IncomeLight, expense = ExpenseLight)
-private val DarkCashNoteColors = CashNoteColors(income = IncomeDark, expense = ExpenseDark)
+private val LightCashNoteColors =
+    CashNoteColors(income = IncomeLight, expense = ExpenseLight, warning = WarningLight)
+private val DarkCashNoteColors =
+    CashNoteColors(income = IncomeDark, expense = ExpenseDark, warning = WarningDark)
 
 private val LocalCashNoteColors = staticCompositionLocalOf { LightCashNoteColors }
 

@@ -17,6 +17,16 @@
     <string name="home_empty_description">+ 버튼으로 내역을 추가해 보세요</string>
     <string name="home_deleted_message">내역을 삭제했습니다</string>
     <string name="home_delete_failed">삭제하지 못했습니다</string>
+    <string name="home_budget_save_failed">예산을 저장하지 못했습니다</string>
+    <string name="home_budget_set">예산 설정</string>
+    <string name="home_budget_edit">예산 변경</string>
+    <string name="home_budget_amount">예산 %1$s원</string>
+    <string name="home_budget_usage">%1$d%% 사용</string>
+    <string name="home_budget_warning" formatted="false">예산의 80%를 넘었어요</string>
+    <string name="home_budget_exceeded">예산을 초과했어요</string>
+    <string name="home_budget_dialog_title">월 예산</string>
+    <string name="home_budget_dialog_applies_from">%1$d년 %2$d월부터 적용</string>
+    <string name="home_budget_dialog_hint">비워 두면 이 달부터 예산을 없애요</string>
     <string name="action_undo">실행 취소</string>
     <string name="action_delete">삭제</string>
     <string name="statistics_title">통계</string>

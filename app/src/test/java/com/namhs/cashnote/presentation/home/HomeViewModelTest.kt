@@ -3,14 +3,18 @@ package com.namhs.cashnote.presentation.home
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.namhs.cashnote.R
+import com.namhs.cashnote.domain.model.BudgetStatus
 import com.namhs.cashnote.domain.model.Category
 import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.usecase.AddTransactionUseCase
 import com.namhs.cashnote.domain.usecase.DeleteTransactionUseCase
+import com.namhs.cashnote.domain.usecase.GetBudgetStatusUseCase
 import com.namhs.cashnote.domain.usecase.GetMonthlySummaryUseCase
 import com.namhs.cashnote.domain.usecase.GetMonthlyTransactionsUseCase
+import com.namhs.cashnote.domain.usecase.SetMonthlyBudgetUseCase
+import com.namhs.cashnote.testing.FakeBudgetRepository
 import com.namhs.cashnote.testing.FakeCategoryRepository
 import com.namhs.cashnote.testing.FakeTransactionRepository
 import com.namhs.cashnote.testing.MainDispatcherRule
@@ -20,6 +24,7 @@ import java.time.YearMonth
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -47,6 +52,7 @@ class HomeViewModelTest {
     private val transactionRepository =
         FakeTransactionRepository(listOf(breakfast, lunch, dinner, nextMonthTransaction))
     private val categoryRepository = FakeCategoryRepository(listOf(food))
+    private val budgetRepository = FakeBudgetRepository()
 
     // 목록
 
@@ -204,6 +210,84 @@ class HomeViewModelTest {
         assertEquals(MonthlySummary(expense = 30_000), viewModel.uiState.value.summary)
     }
 
+    // 예산
+
+    @Test
+    fun init_noBudget_budgetIsNull() {
+        assertNull(viewModel().uiState.value.budget)
+    }
+
+    @Test
+    fun init_withBudget_showsBudgetAgainstThisMonthExpense() = runTest {
+        budgetRepository.setBudget(thisMonth, 50_000)
+
+        val budget = viewModel().uiState.value.budget
+
+        // 이번 달 지출은 10,000원 × 3건
+        assertEquals(BudgetStatus(budget = 50_000, spent = 30_000), budget)
+    }
+
+    @Test
+    fun budgetClicked_showsDialogAndDismissHidesIt() {
+        val viewModel = viewModel()
+
+        viewModel.onIntent(HomeIntent.BudgetClicked)
+        assertTrue(viewModel.uiState.value.isBudgetDialogVisible)
+
+        viewModel.onIntent(HomeIntent.BudgetDialogDismissed)
+        assertFalse(viewModel.uiState.value.isBudgetDialogVisible)
+    }
+
+    @Test
+    fun budgetSaved_savesFromDisplayedMonthAndHidesDialog() {
+        val viewModel = viewModel()
+        viewModel.onIntent(HomeIntent.NextMonthClicked)
+        viewModel.onIntent(HomeIntent.BudgetClicked)
+
+        viewModel.onIntent(HomeIntent.BudgetSaved("100,000원"))
+
+        // 숫자만 남겨 보고 있던 다음 달부터 적용한다
+        assertEquals(listOf(nextMonth to 100_000L), budgetRepository.saved)
+        val state = viewModel.uiState.value
+        assertFalse(state.isBudgetDialogVisible)
+        assertEquals(BudgetStatus(budget = 100_000, spent = 10_000), state.budget)
+    }
+
+    @Test
+    fun budgetSaved_emptyInput_savesZeroToRemoveBudget() = runTest {
+        budgetRepository.setBudget(thisMonth, 50_000)
+        val viewModel = viewModel()
+
+        viewModel.onIntent(HomeIntent.BudgetSaved(""))
+
+        assertEquals(thisMonth to 0L, budgetRepository.saved.last())
+        assertNull(viewModel.uiState.value.budget)
+    }
+
+    @Test
+    fun budgetSaved_limitsTo12Digits() {
+        val viewModel = viewModel()
+
+        viewModel.onIntent(HomeIntent.BudgetSaved("1234567890123"))
+
+        assertEquals(thisMonth to 123_456_789_012L, budgetRepository.saved.single())
+    }
+
+    @Test
+    fun budgetSaved_failure_showsMessage() = runTest {
+        val viewModel = viewModel()
+        budgetRepository.failure = IllegalStateException("디스크 오류")
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(HomeIntent.BudgetSaved("100000"))
+
+            assertEquals(
+                HomeSideEffect.ShowMessage(R.string.home_budget_save_failed),
+                awaitItem()
+            )
+        }
+    }
+
     // 화면 이동
 
     @Test
@@ -295,7 +379,9 @@ class HomeViewModelTest {
         getMonthlyTransactions = GetMonthlyTransactionsUseCase(repository, categoryRepository),
         getMonthlySummary = GetMonthlySummaryUseCase(repository),
         deleteTransaction = DeleteTransactionUseCase(repository),
-        addTransaction = AddTransactionUseCase(repository)
+        addTransaction = AddTransactionUseCase(repository),
+        getBudgetStatus = GetBudgetStatusUseCase(budgetRepository, repository),
+        setMonthlyBudget = SetMonthlyBudgetUseCase(budgetRepository)
     )
 
     // 프로세스 복원처럼 이미 월이 저장된 상태를 만든다
