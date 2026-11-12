@@ -49,6 +49,8 @@ com.namhs.cashnote
 - Room이 유일한 데이터 소스다. 네트워크 응답은 Room에 저장하고, UI는 Room Flow만 구독한다.
 - Entity ↔ Domain, DTO ↔ Entity 변환은 data 계층의 mapper에서만 한다.
 - API 키는 `local.properties` → `BuildConfig`로 주입한다. 키를 코드나 커밋에 넣지 않는다.
+  - 환율 API 키 이름은 `EXCHANGE_RATE_API_KEY`(local.properties 키 = 환경 변수 = `BuildConfig` 필드). 없으면 빈 문자열로 빌드된다.
+  - CI는 GitHub Secrets의 같은 이름을 환경 변수로 받는다. 환경 변수가 local.properties보다 우선한다.
 
 ## 코드 스타일
 - Kotlin 공식 코드 스타일을 따른다.
