@@ -4,10 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.Category
+import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.usecase.AddTransactionUseCase
 import com.namhs.cashnote.domain.usecase.DeleteTransactionUseCase
+import com.namhs.cashnote.domain.usecase.GetMonthlySummaryUseCase
 import com.namhs.cashnote.domain.usecase.GetMonthlyTransactionsUseCase
 import com.namhs.cashnote.testing.FakeCategoryRepository
 import com.namhs.cashnote.testing.FakeTransactionRepository
@@ -157,6 +159,51 @@ class HomeViewModelTest {
         )
     }
 
+    // 월 합계
+
+    @Test
+    fun init_showsSummaryOfMonth() {
+        val salary = transaction(id = 1, date = day1)
+            .copy(type = TransactionType.INCOME, amount = 3_000_000)
+        val coffee = transaction(id = 2, date = day2).copy(amount = 4_500)
+        val viewModel = viewModel(FakeTransactionRepository(listOf(salary, coffee)))
+
+        val summary = viewModel.uiState.value.summary
+        assertEquals(MonthlySummary(income = 3_000_000, expense = 4_500), summary)
+        assertEquals(2_995_500L, summary.balance)
+    }
+
+    @Test
+    fun nextMonthClicked_showsSummaryOfNextMonth() {
+        val viewModel = viewModel()
+
+        viewModel.onIntent(HomeIntent.NextMonthClicked)
+
+        assertEquals(MonthlySummary(expense = 10_000), viewModel.uiState.value.summary)
+    }
+
+    @Test
+    fun monthChanged_toEmptyMonth_summaryIsZero() {
+        val viewModel = viewModel()
+
+        viewModel.onIntent(HomeIntent.PreviousMonthClicked)
+
+        // 이번 달 합계가 남아 있지 않아야 한다
+        assertEquals(MonthlySummary(), viewModel.uiState.value.summary)
+    }
+
+    @Test
+    fun deleteAndUndo_updatesSummary() {
+        val viewModel = viewModel()
+        assertEquals(MonthlySummary(expense = 30_000), viewModel.uiState.value.summary)
+
+        viewModel.onIntent(HomeIntent.DeleteRequested(breakfast.id))
+        assertEquals(MonthlySummary(expense = 20_000), viewModel.uiState.value.summary)
+
+        viewModel.onIntent(HomeIntent.UndoDeleteClicked)
+        assertEquals(MonthlySummary(expense = 30_000), viewModel.uiState.value.summary)
+    }
+
     // 화면 이동
 
     @Test
@@ -246,6 +293,7 @@ class HomeViewModelTest {
     ) = HomeViewModel(
         savedStateHandle = savedStateHandle,
         getMonthlyTransactions = GetMonthlyTransactionsUseCase(repository, categoryRepository),
+        getMonthlySummary = GetMonthlySummaryUseCase(repository),
         deleteTransaction = DeleteTransactionUseCase(repository),
         addTransaction = AddTransactionUseCase(repository)
     )

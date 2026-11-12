@@ -1,6 +1,7 @@
 package com.namhs.cashnote.presentation.home
 
 import androidx.annotation.StringRes
+import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.TransactionWithCategory
 import java.time.LocalDate
 import java.time.YearMonth
@@ -11,7 +12,9 @@ data class HomeUiState(
     val month: YearMonth,
     val isLoading: Boolean = true,
     /** 날짜별로 묶은 거래. 날짜 최신순 */
-    val dailyGroups: List<DailyTransactions> = emptyList()
+    val dailyGroups: List<DailyTransactions> = emptyList(),
+    /** 표시 중인 월의 수입·지출 합계 */
+    val summary: MonthlySummary = MonthlySummary()
 ) {
     /** 불러오기가 끝났는데 거래가 하나도 없다 */
     val isEmpty: Boolean

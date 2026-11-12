@@ -130,6 +130,46 @@ class TransactionDaoTest {
         assertTrue(observeNovember().isEmpty())
     }
 
+    // 유형별 합계
+
+    @Test
+    fun observeTotalsByType_sumsAmountsPerType() = runBlocking {
+        val day = LocalDate.of(2026, 11, 9)
+        dao.insert(transaction(date = day, amount = 12_500))
+        dao.insert(transaction(date = day, amount = 7_500))
+        dao.insert(transaction(date = day, amount = 3_000_000, type = TransactionType.INCOME))
+
+        val result = observeNovemberTotals()
+
+        // GROUP BY 결과 순서는 보장되지 않으므로 Set으로 비교한다
+        assertEquals(
+            setOf(
+                TypeTotal(TransactionType.EXPENSE, 20_000),
+                TypeTotal(TransactionType.INCOME, 3_000_000)
+            ),
+            result.toSet()
+        )
+    }
+
+    @Test
+    fun observeTotalsByType_includesFirstAndLastDayOfMonthOnly() = runBlocking {
+        listOf(
+            LocalDate.of(2026, 10, 31) to 1L,
+            LocalDate.of(2026, 11, 1) to 10L,
+            LocalDate.of(2026, 11, 30) to 100L,
+            LocalDate.of(2026, 12, 1) to 1_000L
+        ).forEach { (date, amount) -> dao.insert(transaction(date = date, amount = amount)) }
+
+        assertEquals(listOf(TypeTotal(TransactionType.EXPENSE, 110)), observeNovemberTotals())
+    }
+
+    @Test
+    fun observeTotalsByType_emptyWhenNoTransactionInRange() = runBlocking {
+        dao.insert(transaction(date = LocalDate.of(2026, 10, 31)))
+
+        assertTrue(observeNovemberTotals().isEmpty())
+    }
+
     // 외래 키
 
     @Test(expected = SQLiteConstraintException::class)
@@ -144,13 +184,20 @@ class TransactionDaoTest {
         endExclusive = LocalDate.of(2026, 12, 1)
     ).first()
 
+    private suspend fun observeNovemberTotals(): List<TypeTotal> = dao.observeTotalsByType(
+        start = LocalDate.of(2026, 11, 1),
+        endExclusive = LocalDate.of(2026, 12, 1)
+    ).first()
+
     private fun transaction(
         date: LocalDate,
         createdAt: Instant = Instant.parse("2026-11-09T03:00:00Z"),
-        categoryId: Long = 1
+        categoryId: Long = 1,
+        amount: Long = 12_500,
+        type: TransactionType = TransactionType.EXPENSE
     ) = TransactionEntity(
-        amount = 12_500,
-        type = TransactionType.EXPENSE,
+        amount = amount,
+        type = type,
         categoryId = categoryId,
         memo = "점심",
         date = date,

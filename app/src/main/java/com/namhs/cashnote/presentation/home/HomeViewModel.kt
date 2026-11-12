@@ -7,6 +7,7 @@ import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionWithCategory
 import com.namhs.cashnote.domain.usecase.AddTransactionUseCase
 import com.namhs.cashnote.domain.usecase.DeleteTransactionUseCase
+import com.namhs.cashnote.domain.usecase.GetMonthlySummaryUseCase
 import com.namhs.cashnote.domain.usecase.GetMonthlyTransactionsUseCase
 import com.namhs.cashnote.presentation.base.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,6 +15,7 @@ import java.time.YearMonth
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -23,6 +25,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val getMonthlyTransactions: GetMonthlyTransactionsUseCase,
+    private val getMonthlySummary: GetMonthlySummaryUseCase,
     private val deleteTransaction: DeleteTransactionUseCase,
     private val addTransaction: AddTransactionUseCase
 ) : MviViewModel<HomeUiState, HomeIntent, HomeSideEffect>(
@@ -36,7 +39,7 @@ class HomeViewModel @Inject constructor(
     private var recentlyDeleted: Transaction? = null
 
     init {
-        observeTransactions()
+        observeMonth()
     }
 
     override fun onIntent(intent: HomeIntent) {
@@ -56,16 +59,25 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    // 월이 바뀔 때마다 그 달의 거래를 다시 구독한다. 이전 달 구독은 flatMapLatest가 취소한다.
-    // 새 달의 데이터가 올 때까지 기존 목록을 그대로 두어 빈 화면이 깜빡이지 않게 한다
+    // 월이 바뀔 때마다 그 달의 거래 목록과 합계를 함께 다시 구독한다.
+    // 이전 달 구독은 flatMapLatest가 둘 다 취소하므로 다른 달의 목록과 합계가 섞이지 않는다.
+    // 새 달의 데이터가 올 때까지 기존 화면을 그대로 두어 빈 화면이 깜빡이지 않게 한다
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun observeTransactions() {
+    private fun observeMonth() {
         viewModelScope.launch {
             uiState.map { it.month }
                 .distinctUntilChanged()
-                .flatMapLatest { month -> getMonthlyTransactions(month) }
-                .collect { items ->
-                    setState { copy(isLoading = false, dailyGroups = items.groupByDate()) }
+                .flatMapLatest { month ->
+                    combine(getMonthlyTransactions(month), getMonthlySummary(month), ::Pair)
+                }
+                .collect { (items, summary) ->
+                    setState {
+                        copy(
+                            isLoading = false,
+                            dailyGroups = items.groupByDate(),
+                            summary = summary
+                        )
+                    }
                 }
         }
     }

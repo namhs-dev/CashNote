@@ -3,8 +3,11 @@ package com.namhs.cashnote.data.repository
 import com.namhs.cashnote.data.local.dao.TransactionDao
 import com.namhs.cashnote.data.repository.mapper.toDomain
 import com.namhs.cashnote.data.repository.mapper.toEntity
+import com.namhs.cashnote.data.repository.mapper.toMonthlySummary
+import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.repository.TransactionRepository
+import java.time.LocalDate
 import java.time.YearMonth
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -13,11 +16,15 @@ import kotlinx.coroutines.flow.map
 class TransactionRepositoryImpl @Inject constructor(private val transactionDao: TransactionDao) :
     TransactionRepository {
     override fun observeTransactions(month: YearMonth): Flow<List<Transaction>> {
-        // 해당 월 1일 이상, 다음 달 1일 미만
-        val start = month.atDay(1)
-        val endExclusive = month.plusMonths(1).atDay(1)
+        val (start, endExclusive) = month.toDateRange()
         return transactionDao.observeByDateRange(start, endExclusive)
             .map { entities -> entities.map { it.toDomain() } }
+    }
+
+    override fun observeMonthlySummary(month: YearMonth): Flow<MonthlySummary> {
+        val (start, endExclusive) = month.toDateRange()
+        return transactionDao.observeTotalsByType(start, endExclusive)
+            .map { totals -> totals.toMonthlySummary() }
     }
 
     override suspend fun getTransaction(id: Long): Transaction? =
@@ -34,3 +41,6 @@ class TransactionRepositoryImpl @Inject constructor(private val transactionDao: 
         transactionDao.delete(transaction.toEntity())
     }
 }
+
+// 해당 월 1일 이상, 다음 달 1일 미만
+private fun YearMonth.toDateRange(): Pair<LocalDate, LocalDate> = atDay(1) to plusMonths(1).atDay(1)

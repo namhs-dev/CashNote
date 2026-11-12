@@ -9,6 +9,10 @@
     <string name="home_date_header_pattern">M월 d일 (E)</string>
     <string name="home_amount_income">+%1$s원</string>
     <string name="home_amount_expense">-%1$s원</string>
+    <string name="home_amount">%1$s원</string>
+    <string name="home_summary_income">수입</string>
+    <string name="home_summary_expense">지출</string>
+    <string name="home_summary_balance">합계</string>
     <string name="home_empty_title">이 달의 내역이 없습니다</string>
     <string name="home_empty_description">+ 버튼으로 내역을 추가해 보세요</string>
     <string name="home_deleted_message">내역을 삭제했습니다</string>

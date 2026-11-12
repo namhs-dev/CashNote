@@ -19,9 +19,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +46,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -51,6 +55,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.Category
+import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.model.TransactionWithCategory
@@ -138,23 +143,89 @@ fun HomeScreen(
         // 하단 내비게이션 바가 이미 시스템 바 여백을 처리하므로 중복으로 넣지 않는다
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
-        val contentModifier = Modifier
-            .padding(innerPadding)
-            .fillMaxSize()
-        when {
-            state.isLoading -> Box(contentModifier, contentAlignment = Alignment.Center) {
+        if (state.isLoading) {
+            Box(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
                 CircularProgressIndicator()
             }
-
-            state.isEmpty -> EmptyContent(contentModifier)
-
-            else -> TransactionList(
-                groups = state.dailyGroups,
-                onItemClick = { onIntent(HomeIntent.TransactionClicked(it)) },
-                onItemDelete = { onIntent(HomeIntent.DeleteRequested(it)) },
-                modifier = contentModifier
-            )
+            return@Scaffold
         }
+        // 요약 카드는 고정하고 아래 목록만 스크롤한다
+        Column(
+            Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+        ) {
+            SummaryCard(
+                summary = state.summary,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+            val contentModifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+            if (state.isEmpty) {
+                EmptyContent(contentModifier)
+            } else {
+                TransactionList(
+                    groups = state.dailyGroups,
+                    onItemClick = { onIntent(HomeIntent.TransactionClicked(it)) },
+                    onItemDelete = { onIntent(HomeIntent.DeleteRequested(it)) },
+                    modifier = contentModifier
+                )
+            }
+        }
+    }
+}
+
+// 표시 중인 월의 수입·지출·합계
+@Composable
+private fun SummaryCard(summary: MonthlySummary, modifier: Modifier = Modifier) {
+    Card(modifier = modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SummaryRow(label = stringResource(R.string.home_summary_income)) {
+                AmountText(amount = summary.income, type = TransactionType.INCOME)
+            }
+            SummaryRow(label = stringResource(R.string.home_summary_expense)) {
+                AmountText(amount = summary.expense, type = TransactionType.EXPENSE)
+            }
+            HorizontalDivider()
+            SummaryRow(
+                label = stringResource(R.string.home_summary_balance),
+                labelStyle = MaterialTheme.typography.titleMedium
+            ) {
+                val formatted = remember(summary.balance) { formatAmount(summary.balance) }
+                Text(
+                    text = stringResource(R.string.home_amount, formatted),
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+        }
+    }
+}
+
+// 왼쪽 라벨, 오른쪽 금액. 스크린리더가 "수입, +3,000,000원"처럼 한 번에 읽도록 묶는다
+@Composable
+private fun SummaryRow(
+    label: String,
+    labelStyle: TextStyle = MaterialTheme.typography.bodyLarge,
+    amount: @Composable () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {},
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, style = labelStyle)
+        amount()
     }
 }
 
@@ -277,7 +348,7 @@ private fun TransactionRow(item: TransactionWithCategory, onClick: () -> Unit) {
 
 @Composable
 private fun AmountText(amount: Long, type: TransactionType) {
-    val formatted = remember(amount) { NumberFormat.getNumberInstance().format(amount) }
+    val formatted = remember(amount) { formatAmount(amount) }
     val (formatRes, color) = when (type) {
         TransactionType.INCOME -> R.string.home_amount_income to CashNoteTheme.colors.income
         TransactionType.EXPENSE -> R.string.home_amount_expense to CashNoteTheme.colors.expense
@@ -288,6 +359,9 @@ private fun AmountText(amount: Long, type: TransactionType) {
         color = color
     )
 }
+
+// 천 단위 구분 기호를 넣는다. 음수면 앞에 - 부호가 붙는다
+private fun formatAmount(amount: Long): String = NumberFormat.getNumberInstance().format(amount)
 
 @Composable
 private fun EmptyContent(modifier: Modifier = Modifier) {
@@ -346,7 +420,8 @@ private fun HomeScreenPreview() {
                         LocalDate.of(2026, 11, 9),
                         listOf(previewItem(3, 8_000, previewFood, "", 9))
                     )
-                )
+                ),
+                summary = MonthlySummary(income = 3_000_000, expense = 20_500)
             ),
             onIntent = {}
         )
