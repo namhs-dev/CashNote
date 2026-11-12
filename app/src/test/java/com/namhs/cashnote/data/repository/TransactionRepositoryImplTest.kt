@@ -1,8 +1,10 @@
 package com.namhs.cashnote.data.repository
 
+import com.namhs.cashnote.data.local.dao.CategoryTotal
 import com.namhs.cashnote.data.local.dao.TransactionDao
 import com.namhs.cashnote.data.local.dao.TypeTotal
 import com.namhs.cashnote.data.local.entity.TransactionEntity
+import com.namhs.cashnote.domain.model.CategoryAmount
 import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
@@ -151,6 +153,34 @@ class TransactionRepositoryImplTest {
 
         assertEquals(MonthlySummary(), result)
     }
+
+    // 카테고리별 합계
+
+    @Test
+    fun observeCategoryTotals_queriesMonthRange() {
+        repository.observeCategoryTotals(YearMonth.of(2026, 11), TransactionType.EXPENSE)
+
+        assertEquals(LocalDate.of(2026, 11, 1) to LocalDate.of(2026, 12, 1), dao.lastRange)
+    }
+
+    @Test
+    fun observeCategoryTotals_passesType() {
+        repository.observeCategoryTotals(YearMonth.of(2026, 11), TransactionType.EXPENSE)
+
+        assertEquals(TransactionType.EXPENSE, dao.lastType)
+    }
+
+    @Test
+    fun observeCategoryTotals_mapsTotalsInOrder() = runBlocking {
+        dao.categoryTotals = listOf(CategoryTotal(3, 50_000), CategoryTotal(1, 20_000))
+
+        val result = repository
+            .observeCategoryTotals(YearMonth.of(2026, 11), TransactionType.EXPENSE)
+            .first()
+
+        // DB가 정렬한 순서를 그대로 유지한다
+        assertEquals(listOf(CategoryAmount(3, 50_000), CategoryAmount(1, 20_000)), result)
+    }
 }
 
 /** 호출 인자를 기록하는 가짜 DAO */
@@ -158,6 +188,8 @@ private class FakeTransactionDao : TransactionDao {
     var lastRange: Pair<LocalDate, LocalDate>? = null
     var entities: List<TransactionEntity> = emptyList()
     var totals: List<TypeTotal> = emptyList()
+    var categoryTotals: List<CategoryTotal> = emptyList()
+    var lastType: TransactionType? = null
     var nextId: Long = 1
     val inserted = mutableListOf<TransactionEntity>()
     val updated = mutableListOf<TransactionEntity>()
@@ -177,6 +209,16 @@ private class FakeTransactionDao : TransactionDao {
     ): Flow<List<TypeTotal>> {
         lastRange = start to endExclusive
         return flowOf(totals)
+    }
+
+    override fun observeTotalsByCategory(
+        type: TransactionType,
+        start: LocalDate,
+        endExclusive: LocalDate
+    ): Flow<List<CategoryTotal>> {
+        lastType = type
+        lastRange = start to endExclusive
+        return flowOf(categoryTotals)
     }
 
     override suspend fun getById(id: Long): TransactionEntity? = entities.find { it.id == id }

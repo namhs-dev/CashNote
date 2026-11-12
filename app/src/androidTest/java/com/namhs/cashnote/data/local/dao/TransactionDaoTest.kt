@@ -170,6 +170,63 @@ class TransactionDaoTest {
         assertTrue(observeNovemberTotals().isEmpty())
     }
 
+    // 카테고리별 합계
+
+    @Test
+    fun observeTotalsByCategory_sumsAmountsPerCategory() = runBlocking {
+        val day = LocalDate.of(2026, 11, 9)
+        dao.insert(transaction(date = day, categoryId = 1, amount = 12_500))
+        dao.insert(transaction(date = day, categoryId = 1, amount = 7_500))
+        dao.insert(transaction(date = day, categoryId = 2, amount = 5_000))
+
+        assertEquals(
+            listOf(CategoryTotal(1, 20_000), CategoryTotal(2, 5_000)),
+            observeNovemberExpenseByCategory()
+        )
+    }
+
+    @Test
+    fun observeTotalsByCategory_includesRequestedTypeOnly() = runBlocking {
+        val day = LocalDate.of(2026, 11, 9)
+        dao.insert(transaction(date = day, categoryId = 1, amount = 12_500))
+        dao.insert(
+            transaction(
+                date = day,
+                categoryId = 2,
+                amount = 3_000_000,
+                type = TransactionType.INCOME
+            )
+        )
+
+        assertEquals(listOf(CategoryTotal(1, 12_500)), observeNovemberExpenseByCategory())
+    }
+
+    @Test
+    fun observeTotalsByCategory_sortsByTotalDescThenCategoryId() = runBlocking {
+        val day = LocalDate.of(2026, 11, 9)
+        dao.insert(transaction(date = day, categoryId = 3, amount = 1_000))
+        dao.insert(transaction(date = day, categoryId = 2, amount = 9_000))
+        dao.insert(transaction(date = day, categoryId = 1, amount = 1_000))
+
+        // 금액이 같은 1과 3은 카테고리 id 순서
+        assertEquals(
+            listOf(CategoryTotal(2, 9_000), CategoryTotal(1, 1_000), CategoryTotal(3, 1_000)),
+            observeNovemberExpenseByCategory()
+        )
+    }
+
+    @Test
+    fun observeTotalsByCategory_includesFirstAndLastDayOfMonthOnly() = runBlocking {
+        listOf(
+            LocalDate.of(2026, 10, 31) to 1L,
+            LocalDate.of(2026, 11, 1) to 10L,
+            LocalDate.of(2026, 11, 30) to 100L,
+            LocalDate.of(2026, 12, 1) to 1_000L
+        ).forEach { (date, amount) -> dao.insert(transaction(date = date, amount = amount)) }
+
+        assertEquals(listOf(CategoryTotal(1, 110)), observeNovemberExpenseByCategory())
+    }
+
     // 외래 키
 
     @Test(expected = SQLiteConstraintException::class)
@@ -188,6 +245,13 @@ class TransactionDaoTest {
         start = LocalDate.of(2026, 11, 1),
         endExclusive = LocalDate.of(2026, 12, 1)
     ).first()
+
+    private suspend fun observeNovemberExpenseByCategory(): List<CategoryTotal> =
+        dao.observeTotalsByCategory(
+            type = TransactionType.EXPENSE,
+            start = LocalDate.of(2026, 11, 1),
+            endExclusive = LocalDate.of(2026, 12, 1)
+        ).first()
 
     private fun transaction(
         date: LocalDate,

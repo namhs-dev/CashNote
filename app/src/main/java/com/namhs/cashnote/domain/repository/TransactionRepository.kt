@@ -1,7 +1,9 @@
 package com.namhs.cashnote.domain.repository
 
+import com.namhs.cashnote.domain.model.CategoryAmount
 import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
+import com.namhs.cashnote.domain.model.TransactionType
 import java.time.YearMonth
 import kotlinx.coroutines.flow.Flow
 
@@ -11,6 +13,9 @@ interface TransactionRepository {
 
     /** [month]의 수입·지출 합계를 구독한다. 거래가 없으면 0이다. */
     fun observeMonthlySummary(month: YearMonth): Flow<MonthlySummary>
+
+    /** [month]의 [type] 거래를 카테고리별로 합산해 금액이 큰 순서로 구독한다. */
+    fun observeCategoryTotals(month: YearMonth, type: TransactionType): Flow<List<CategoryAmount>>
 
     /** id로 거래를 조회한다. 없으면 null */
     suspend fun getTransaction(id: Long): Transaction?

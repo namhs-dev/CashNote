@@ -1,7 +1,9 @@
 package com.namhs.cashnote.data.repository.mapper
 
+import com.namhs.cashnote.data.local.dao.CategoryTotal
 import com.namhs.cashnote.data.local.dao.TypeTotal
 import com.namhs.cashnote.data.local.entity.TransactionEntity
+import com.namhs.cashnote.domain.model.CategoryAmount
 import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
@@ -36,3 +38,6 @@ fun List<TypeTotal>.toMonthlySummary(): MonthlySummary {
         expense = totalByType[TransactionType.EXPENSE] ?: 0
     )
 }
+
+fun CategoryTotal.toDomain(): CategoryAmount =
+    CategoryAmount(categoryId = categoryId, amount = total)

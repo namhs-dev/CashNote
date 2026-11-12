@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.namhs.cashnote.data.local.entity.TransactionEntity
+import com.namhs.cashnote.domain.model.TransactionType
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 
@@ -36,6 +37,24 @@ interface TransactionDao {
         """
     )
     fun observeTotalsByType(start: LocalDate, endExclusive: LocalDate): Flow<List<TypeTotal>>
+
+    /**
+     * [start] 이상 [endExclusive] 미만 날짜의 [type] 거래를 카테고리별로 합산해 구독한다.
+     * 금액이 큰 순서로, 같으면 카테고리 id 순서로 정렬한다.
+     */
+    @Query(
+        """
+        SELECT category_id AS categoryId, SUM(amount) AS total FROM transactions
+        WHERE type = :type AND date >= :start AND date < :endExclusive
+        GROUP BY category_id
+        ORDER BY total DESC, category_id ASC
+        """
+    )
+    fun observeTotalsByCategory(
+        type: TransactionType,
+        start: LocalDate,
+        endExclusive: LocalDate
+    ): Flow<List<CategoryTotal>>
 
     /** id로 거래 하나를 조회한다. 없으면 null */
     @Query("SELECT * FROM transactions WHERE id = :id")
