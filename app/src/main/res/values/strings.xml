@@ -20,6 +20,10 @@
     <string name="action_undo">실행 취소</string>
     <string name="action_delete">삭제</string>
     <string name="statistics_title">통계</string>
+    <string name="statistics_chart_description">카테고리별 지출 차트</string>
+    <string name="statistics_total_expense">총 지출</string>
+    <string name="statistics_empty">이 달의 지출이 없습니다</string>
+    <string name="statistics_percent">%1$d%%</string>
     <string name="transaction_edit_title">내역 입력</string>
     <string name="action_add_transaction">내역 추가</string>
     <string name="action_navigate_back">뒤로 가기</string>

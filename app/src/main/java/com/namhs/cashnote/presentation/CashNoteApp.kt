@@ -22,7 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import com.namhs.cashnote.presentation.home.HomeRoute
 import com.namhs.cashnote.presentation.navigation.CashNoteDestination
 import com.namhs.cashnote.presentation.navigation.TopLevelDestination
-import com.namhs.cashnote.presentation.statistics.StatisticsScreen
+import com.namhs.cashnote.presentation.statistics.StatisticsRoute
 import com.namhs.cashnote.presentation.transaction.TransactionEditRoute
 
 @Composable
@@ -70,7 +70,7 @@ fun CashNoteApp(modifier: Modifier = Modifier) {
                     }
                 )
             }
-            composable<CashNoteDestination.Statistics> { StatisticsScreen() }
+            composable<CashNoteDestination.Statistics> { StatisticsRoute() }
             composable<CashNoteDestination.TransactionEdit> {
                 TransactionEditRoute(onBack = { navController.navigateUp() })
             }
