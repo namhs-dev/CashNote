@@ -1,6 +1,7 @@
 package com.namhs.cashnote.presentation.home
 
 import androidx.annotation.StringRes
+import com.namhs.cashnote.domain.model.BudgetStatus
 import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.TransactionWithCategory
 import java.time.LocalDate
@@ -14,7 +15,11 @@ data class HomeUiState(
     /** 날짜별로 묶은 거래. 날짜 최신순 */
     val dailyGroups: List<DailyTransactions> = emptyList(),
     /** 표시 중인 월의 수입·지출 합계 */
-    val summary: MonthlySummary = MonthlySummary()
+    val summary: MonthlySummary = MonthlySummary(),
+    /** 표시 중인 월의 예산 대비 지출. 예산이 없으면 null */
+    val budget: BudgetStatus? = null,
+    /** 예산 입력 다이얼로그 표시 여부 */
+    val isBudgetDialogVisible: Boolean = false
 ) {
     /** 불러오기가 끝났는데 거래가 하나도 없다 */
     val isEmpty: Boolean
@@ -41,6 +46,15 @@ sealed interface HomeIntent {
 
     /** 스낵바의 실행 취소. 마지막으로 삭제한 거래를 되돌린다 */
     data object UndoDeleteClicked : HomeIntent
+
+    /** 요약 카드의 예산 영역. 예산 입력 다이얼로그를 연다 */
+    data object BudgetClicked : HomeIntent
+
+    /** 예산 입력 확인. 표시 중인 월부터 적용하며, 빈 값·0이면 예산을 없앤다 */
+    data class BudgetSaved(val input: String) : HomeIntent
+
+    /** 예산 입력 취소 */
+    data object BudgetDialogDismissed : HomeIntent
 }
 
 /** 홈 화면의 일회성 이벤트 */

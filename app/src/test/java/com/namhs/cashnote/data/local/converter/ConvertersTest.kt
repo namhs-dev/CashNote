@@ -3,6 +3,7 @@ package com.namhs.cashnote.data.local.converter
 import com.namhs.cashnote.domain.model.TransactionType
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -67,5 +68,23 @@ class ConvertersTest {
     fun transactionType_storedAsName() {
         assertEquals("INCOME", converters.fromTransactionType(TransactionType.INCOME))
         assertEquals("EXPENSE", converters.fromTransactionType(TransactionType.EXPENSE))
+    }
+
+    // YearMonth
+
+    @Test
+    fun yearMonth_roundTrip() {
+        listOf(YearMonth.of(2026, 1), YearMonth.of(2026, 11), YearMonth.of(2026, 12)).forEach {
+            assertEquals(it, converters.toYearMonth(converters.fromYearMonth(it)))
+        }
+    }
+
+    @Test
+    fun yearMonth_storedValueKeepsMonthOrder() {
+        // DB에서 start_month <= :month 비교와 정렬이 월 순서와 같아야 한다
+        val december = converters.fromYearMonth(YearMonth.of(2026, 12))
+        val nextJanuary = converters.fromYearMonth(YearMonth.of(2027, 1))
+
+        assertEquals(1, nextJanuary - december)
     }
 }

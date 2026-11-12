@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.namhs.cashnote.R
+import com.namhs.cashnote.domain.model.BudgetStatus
 import com.namhs.cashnote.domain.model.Category
 import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
@@ -162,6 +163,8 @@ fun HomeScreen(
         ) {
             SummaryCard(
                 summary = state.summary,
+                budget = state.budget,
+                onBudgetClick = { onIntent(HomeIntent.BudgetClicked) },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
             val contentModifier = Modifier
@@ -178,12 +181,25 @@ fun HomeScreen(
                 )
             }
         }
+        if (state.isBudgetDialogVisible) {
+            BudgetDialog(
+                month = state.month,
+                currentBudget = state.budget?.budget,
+                onSave = { onIntent(HomeIntent.BudgetSaved(it)) },
+                onDismiss = { onIntent(HomeIntent.BudgetDialogDismissed) }
+            )
+        }
     }
 }
 
-// 표시 중인 월의 수입·지출·합계
+// 표시 중인 월의 수입·지출·합계와 예산
 @Composable
-private fun SummaryCard(summary: MonthlySummary, modifier: Modifier = Modifier) {
+private fun SummaryCard(
+    summary: MonthlySummary,
+    budget: BudgetStatus?,
+    onBudgetClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Card(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -206,6 +222,8 @@ private fun SummaryCard(summary: MonthlySummary, modifier: Modifier = Modifier) 
                     style = MaterialTheme.typography.titleMedium
                 )
             }
+            HorizontalDivider()
+            BudgetSection(budget = budget, onClick = onBudgetClick)
         }
     }
 }
@@ -398,7 +416,31 @@ private fun HomeScreenPreview() {
                         listOf(previewItem(3, 8_000, previewFood, "", 9))
                     )
                 ),
-                summary = MonthlySummary(income = 3_000_000, expense = 20_500)
+                summary = MonthlySummary(income = 3_000_000, expense = 20_500),
+                // 82% 사용: 주의 단계
+                budget = BudgetStatus(budget = 25_000, spent = 20_500)
+            ),
+            onIntent = {}
+        )
+    }
+}
+
+@Preview(name = "예산 초과", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun HomeScreenBudgetExceededPreview() {
+    CashNoteTheme {
+        HomeScreen(
+            state = HomeUiState(
+                month = YearMonth.of(2026, 11),
+                isLoading = false,
+                dailyGroups = listOf(
+                    DailyTransactions(
+                        LocalDate.of(2026, 11, 10),
+                        listOf(previewItem(1, 620_000, previewFood, "회식", 10))
+                    )
+                ),
+                summary = MonthlySummary(expense = 620_000),
+                budget = BudgetStatus(budget = 500_000, spent = 620_000)
             ),
             onIntent = {}
         )
