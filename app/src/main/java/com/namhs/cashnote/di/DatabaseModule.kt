@@ -2,6 +2,7 @@ package com.namhs.cashnote.di
 
 import android.content.Context
 import androidx.room.Room
+import com.namhs.cashnote.data.local.dao.BudgetDao
 import com.namhs.cashnote.data.local.dao.CategoryDao
 import com.namhs.cashnote.data.local.dao.TransactionDao
 import com.namhs.cashnote.data.local.database.CashNoteDatabase
@@ -35,4 +36,7 @@ object DatabaseModule {
 
     @Provides
     fun provideCategoryDao(database: CashNoteDatabase): CategoryDao = database.categoryDao()
+
+    @Provides
+    fun provideBudgetDao(database: CashNoteDatabase): BudgetDao = database.budgetDao()
 }
