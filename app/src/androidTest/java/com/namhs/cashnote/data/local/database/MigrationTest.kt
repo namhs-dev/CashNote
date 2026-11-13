@@ -50,6 +50,27 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun migrate2To3_keepsBudgetsAndAddsExchangeRates() {
+        // v2: 예산 1건 (2026-11 → epoch month 2026 × 12 + 11 − 1 = 24322)
+        helper.createDatabase(TEST_DB, 2).use { db ->
+            db.execSQL("INSERT INTO budgets (start_month, amount) VALUES (24322, 500000)")
+        }
+
+        // v3로 올리면서 스키마가 3.json과 같은지 검증한다
+        helper.runMigrationsAndValidate(TEST_DB, 3, true).use { db ->
+            db.query("SELECT amount FROM budgets WHERE start_month = 24322").use { cursor ->
+                assertEquals(1, cursor.count)
+                cursor.moveToFirst()
+                assertEquals(500_000L, cursor.getLong(0))
+            }
+            db.query("SELECT COUNT(*) FROM exchange_rates").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
     private companion object {
         const val TEST_DB = "migration-test"
     }

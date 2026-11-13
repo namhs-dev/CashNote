@@ -2,9 +2,11 @@ package com.namhs.cashnote.di
 
 import com.namhs.cashnote.data.repository.BudgetRepositoryImpl
 import com.namhs.cashnote.data.repository.CategoryRepositoryImpl
+import com.namhs.cashnote.data.repository.ExchangeRateRepositoryImpl
 import com.namhs.cashnote.data.repository.TransactionRepositoryImpl
 import com.namhs.cashnote.domain.repository.BudgetRepository
 import com.namhs.cashnote.domain.repository.CategoryRepository
+import com.namhs.cashnote.domain.repository.ExchangeRateRepository
 import com.namhs.cashnote.domain.repository.TransactionRepository
 import dagger.Binds
 import dagger.Module
@@ -27,4 +29,9 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindBudgetRepository(impl: BudgetRepositoryImpl): BudgetRepository
+
+    @Binds
+    abstract fun bindExchangeRateRepository(
+        impl: ExchangeRateRepositoryImpl
+    ): ExchangeRateRepository
 }

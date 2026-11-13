@@ -1,6 +1,7 @@
 package com.namhs.cashnote.data.local.converter
 
 import com.namhs.cashnote.domain.model.TransactionType
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -86,5 +87,28 @@ class ConvertersTest {
         val nextJanuary = converters.fromYearMonth(YearMonth.of(2027, 1))
 
         assertEquals(1, nextJanuary - december)
+    }
+
+    // BigDecimal
+
+    @Test
+    fun bigDecimal_roundTrip() {
+        val rate = BigDecimal("1450.5")
+
+        assertEquals(rate, converters.toBigDecimal(converters.fromBigDecimal(rate)))
+    }
+
+    @Test
+    fun bigDecimal_keepsScale() {
+        // equals는 자릿수까지 비교하므로 "1450.10"이 "1450.1"로 바뀌면 실패한다
+        val rate = BigDecimal("1450.10")
+
+        assertEquals(rate, converters.toBigDecimal(converters.fromBigDecimal(rate)))
+    }
+
+    @Test
+    fun bigDecimal_storedWithoutExponent() {
+        assertEquals("0.0000001", converters.fromBigDecimal(BigDecimal("1E-7")))
+        assertEquals("1000", converters.fromBigDecimal(BigDecimal("1E+3")))
     }
 }
