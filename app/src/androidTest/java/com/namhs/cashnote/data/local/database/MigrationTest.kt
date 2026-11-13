@@ -4,6 +4,7 @@ import androidx.room.testing.MigrationTestHelper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -67,6 +68,37 @@ class MigrationTest {
             db.query("SELECT COUNT(*) FROM exchange_rates").use { cursor ->
                 cursor.moveToFirst()
                 assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
+    @Test
+    fun migrate3To4_keepsTransactionsAsKrwAndAddsForeignColumns() {
+        // v3: 카테고리 1개와 원화 거래 1건
+        helper.createDatabase(TEST_DB, 3).use { db ->
+            db.execSQL(
+                "INSERT INTO categories (id, name, type, icon, color) " +
+                    "VALUES (1, '식비', 'EXPENSE', 'food', 4293227379)"
+            )
+            db.execSQL(
+                "INSERT INTO transactions " +
+                    "(id, amount, type, category_id, memo, date, created_at) " +
+                    "VALUES (1, 12500, 'EXPENSE', 1, '점심', 20401, 1762657200000)"
+            )
+        }
+
+        // v4로 올리면서 스키마가 4.json과 같은지 검증한다. 기존 거래의 외화 컬럼은 null이어야 한다
+        helper.runMigrationsAndValidate(TEST_DB, 4, true).use { db ->
+            db.query(
+                "SELECT amount, currency_code, foreign_amount, applied_rate " +
+                    "FROM transactions WHERE id = 1"
+            ).use { cursor ->
+                assertEquals(1, cursor.count)
+                cursor.moveToFirst()
+                assertEquals(12_500L, cursor.getLong(0))
+                assertTrue(cursor.isNull(1))
+                assertTrue(cursor.isNull(2))
+                assertTrue(cursor.isNull(3))
             }
         }
     }

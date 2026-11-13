@@ -4,6 +4,7 @@ import com.namhs.cashnote.data.local.dao.CategoryTotal
 import com.namhs.cashnote.data.local.dao.TypeTotal
 import com.namhs.cashnote.data.local.entity.TransactionEntity
 import com.namhs.cashnote.domain.model.CategoryAmount
+import com.namhs.cashnote.domain.model.ForeignAmount
 import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
@@ -17,7 +18,8 @@ fun TransactionEntity.toDomain(): Transaction = Transaction(
     categoryId = categoryId,
     memo = memo,
     date = date,
-    createdAt = createdAt
+    createdAt = createdAt,
+    foreign = toForeignAmount()
 )
 
 fun Transaction.toEntity(): TransactionEntity = TransactionEntity(
@@ -27,8 +29,19 @@ fun Transaction.toEntity(): TransactionEntity = TransactionEntity(
     categoryId = categoryId,
     memo = memo,
     date = date,
-    createdAt = createdAt
+    createdAt = createdAt,
+    currencyCode = foreign?.currencyCode,
+    foreignAmount = foreign?.amount,
+    appliedRate = foreign?.appliedRate
 )
+
+// 외화 컬럼 셋이 모두 있어야 외화 거래로 본다. 하나라도 비면 원화 거래로 취급한다
+private fun TransactionEntity.toForeignAmount(): ForeignAmount? {
+    val code = currencyCode ?: return null
+    val amount = foreignAmount ?: return null
+    val rate = appliedRate ?: return null
+    return ForeignAmount(currencyCode = code, amount = amount, appliedRate = rate)
+}
 
 // 유형별 합계 → 월 요약. 쿼리 결과에 없는 유형은 거래가 없다는 뜻이므로 0이다
 fun List<TypeTotal>.toMonthlySummary(): MonthlySummary {

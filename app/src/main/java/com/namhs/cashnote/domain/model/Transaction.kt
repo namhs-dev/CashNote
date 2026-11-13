@@ -11,7 +11,7 @@ import java.time.LocalDate
 data class Transaction(
     /** 0이면 아직 저장되지 않은 거래 */
     val id: Long = 0,
-    /** 금액. 원 단위 정수 */
+    /** 금액. 원 단위 정수. 외화 거래도 원화로 환산한 금액을 담아 합계·통계에 그대로 쓴다 */
     val amount: Long,
     val type: TransactionType,
     val categoryId: Long,
@@ -20,5 +20,7 @@ data class Transaction(
     /** 거래일 */
     val date: LocalDate,
     /** 생성 시각 */
-    val createdAt: Instant
+    val createdAt: Instant,
+    /** 외화 거래의 원금액과 적용 환율. 원화 거래면 null */
+    val foreign: ForeignAmount? = null
 )
