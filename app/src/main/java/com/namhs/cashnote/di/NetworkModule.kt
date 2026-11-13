@@ -61,4 +61,8 @@ object NetworkModule {
     @Singleton
     fun provideExchangeRateApi(retrofit: Retrofit): ExchangeRateApi =
         retrofit.create(ExchangeRateApi::class.java)
+
+    @Provides
+    @ExchangeRateApiKey
+    fun provideExchangeRateApiKey(): String = BuildConfig.EXCHANGE_RATE_API_KEY
 }
