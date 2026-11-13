@@ -7,9 +7,11 @@ import androidx.room.TypeConverters
 import com.namhs.cashnote.data.local.converter.Converters
 import com.namhs.cashnote.data.local.dao.BudgetDao
 import com.namhs.cashnote.data.local.dao.CategoryDao
+import com.namhs.cashnote.data.local.dao.ExchangeRateDao
 import com.namhs.cashnote.data.local.dao.TransactionDao
 import com.namhs.cashnote.data.local.entity.BudgetEntity
 import com.namhs.cashnote.data.local.entity.CategoryEntity
+import com.namhs.cashnote.data.local.entity.ExchangeRateEntity
 import com.namhs.cashnote.data.local.entity.TransactionEntity
 
 /**
@@ -18,12 +20,19 @@ import com.namhs.cashnote.data.local.entity.TransactionEntity
  * 스키마가 바뀌면 version을 올리고 migration을 추가한다.
  */
 @Database(
-    entities = [TransactionEntity::class, CategoryEntity::class, BudgetEntity::class],
-    version = 2,
+    entities = [
+        TransactionEntity::class,
+        CategoryEntity::class,
+        BudgetEntity::class,
+        ExchangeRateEntity::class
+    ],
+    version = 3,
     exportSchema = true,
     autoMigrations = [
         // 2: budgets 테이블 추가. 테이블만 늘어나므로 자동 migration으로 충분하다
-        AutoMigration(from = 1, to = 2)
+        AutoMigration(from = 1, to = 2),
+        // 3: exchange_rates 테이블 추가. 마찬가지로 테이블만 늘어난다
+        AutoMigration(from = 2, to = 3)
     ]
 )
 @TypeConverters(Converters::class)
@@ -33,6 +42,8 @@ abstract class CashNoteDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
 
     abstract fun budgetDao(): BudgetDao
+
+    abstract fun exchangeRateDao(): ExchangeRateDao
 
     companion object {
         /** DB 파일 이름 */

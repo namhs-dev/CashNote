@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.namhs.cashnote.data.local.dao.BudgetDao
 import com.namhs.cashnote.data.local.dao.CategoryDao
+import com.namhs.cashnote.data.local.dao.ExchangeRateDao
 import com.namhs.cashnote.data.local.dao.TransactionDao
 import com.namhs.cashnote.data.local.database.CashNoteDatabase
 import com.namhs.cashnote.data.local.database.DefaultCategoryCallback
@@ -39,4 +40,8 @@ object DatabaseModule {
 
     @Provides
     fun provideBudgetDao(database: CashNoteDatabase): BudgetDao = database.budgetDao()
+
+    @Provides
+    fun provideExchangeRateDao(database: CashNoteDatabase): ExchangeRateDao =
+        database.exchangeRateDao()
 }
