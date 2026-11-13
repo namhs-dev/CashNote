@@ -51,11 +51,16 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient, json: Json): Retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .client(okHttpClient)
-        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-        .build()
+    fun provideRetrofit(okHttpClient: OkHttpClient, json: Json): Retrofit =
+        createRetrofit(BASE_URL, okHttpClient, json)
+
+    /** Retrofit 구성. 테스트에서 MockWebServer 주소로 같은 설정의 Retrofit을 만들 때도 쓴다 */
+    internal fun createRetrofit(baseUrl: String, okHttpClient: OkHttpClient, json: Json): Retrofit =
+        Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
 
     @Provides
     @Singleton

@@ -53,6 +53,7 @@ retrofit-converter-kotlinx-serialization = { group = "com.squareup.retrofit2", n
 okhttp-bom = { group = "com.squareup.okhttp3", name = "okhttp-bom", version.ref = "okhttp" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp" }
 okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor" }
+okhttp-mockwebserver3 = { group = "com.squareup.okhttp3", name = "mockwebserver3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
