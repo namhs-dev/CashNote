@@ -26,13 +26,15 @@ import com.namhs.cashnote.data.local.entity.TransactionEntity
         BudgetEntity::class,
         ExchangeRateEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
     autoMigrations = [
         // 2: budgets 테이블 추가. 테이블만 늘어나므로 자동 migration으로 충분하다
         AutoMigration(from = 1, to = 2),
         // 3: exchange_rates 테이블 추가. 마찬가지로 테이블만 늘어난다
-        AutoMigration(from = 2, to = 3)
+        AutoMigration(from = 2, to = 3),
+        // 4: transactions에 외화 컬럼 3개 추가. nullable 컬럼 추가라 기존 행은 null(원화 거래)이 된다
+        AutoMigration(from = 3, to = 4)
     ]
 )
 @TypeConverters(Converters::class)

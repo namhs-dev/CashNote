@@ -6,13 +6,14 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.namhs.cashnote.domain.model.TransactionType
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 
 /**
  * 거래 한 건을 저장하는 Room Entity.
  *
- * 외화 관련 필드는 M4에서 Room migration으로 추가한다.
+ * 외화 거래는 [currencyCode]·[foreignAmount]·[appliedRate]를 함께 채우고, 원화 거래는 셋 다 null이다.
  * 거래가 남아 있는 카테고리는 삭제할 수 없다(RESTRICT).
  */
 @Entity(
@@ -43,5 +44,14 @@ data class TransactionEntity(
     val date: LocalDate,
     /** 생성 시각 */
     @ColumnInfo(name = "created_at")
-    val createdAt: Instant
+    val createdAt: Instant,
+    /** 외화 통화 코드. 원화 거래면 null */
+    @ColumnInfo(name = "currency_code")
+    val currencyCode: String? = null,
+    /** 외화 원금액. 원화 거래면 null */
+    @ColumnInfo(name = "foreign_amount")
+    val foreignAmount: BigDecimal? = null,
+    /** 저장 시점에 적용한 환율(외화 1단위당 원화). 원화 거래면 null */
+    @ColumnInfo(name = "applied_rate")
+    val appliedRate: BigDecimal? = null
 )
