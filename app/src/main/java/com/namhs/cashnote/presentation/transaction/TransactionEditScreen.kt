@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -16,7 +18,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,13 +57,17 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.Category
+import com.namhs.cashnote.domain.model.ExchangeRate
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.presentation.theme.CashNoteTheme
+import java.math.BigDecimal
+import java.text.NumberFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 /** ViewModel과 [TransactionEditScreen]을 연결한다 */
@@ -159,21 +169,20 @@ private fun TransactionEditForm(
             onSelect = { onIntent(TransactionEditIntent.TypeChanged(it)) }
         )
 
-        OutlinedTextField(
-            value = state.amountInput,
-            onValueChange = { onIntent(TransactionEditIntent.AmountChanged(it)) },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.transaction_amount_label)) },
-            suffix = { Text(stringResource(R.string.transaction_amount_suffix)) },
-            isError = state.isAmountError,
-            supportingText = if (state.isAmountError) {
-                { Text(stringResource(R.string.transaction_amount_error)) }
-            } else {
-                null
-            },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true
-        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CurrencySelector(
+                selectedCode = state.currencyCode,
+                options = state.foreignCurrencyOptions,
+                exchangeRates = state.exchangeRates,
+                onSelect = { onIntent(TransactionEditIntent.CurrencySelected(it)) },
+                modifier = Modifier.width(CURRENCY_FIELD_WIDTH)
+            )
+            AmountField(
+                state = state,
+                onAmountChange = { onIntent(TransactionEditIntent.AmountChanged(it)) },
+                modifier = Modifier.weight(1f)
+            )
+        }
 
         CategorySelector(
             categories = state.categories,
@@ -203,6 +212,114 @@ private fun TransactionEditForm(
             Text(stringResource(R.string.action_save))
         }
     }
+}
+
+/** 원화와 저장된 환율이 있는 외화 중에서 고른다. null은 원화 */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CurrencySelector(
+    selectedCode: String?,
+    options: List<String>,
+    exchangeRates: List<ExchangeRate>,
+    onSelect: (String?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val krwLabel = stringResource(R.string.transaction_currency_krw)
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier
+    ) {
+        OutlinedTextField(
+            value = selectedCode ?: krwLabel,
+            onValueChange = {},
+            modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            readOnly = true,
+            label = { Text(stringResource(R.string.transaction_currency_label)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            singleLine = true
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(krwLabel) },
+                onClick = {
+                    onSelect(null)
+                    expanded = false
+                }
+            )
+            options.forEach { code ->
+                val name = exchangeRates.find { it.currencyCode == code }?.currencyName
+                DropdownMenuItem(
+                    text = { Text(if (name == null) code else "$code · $name") },
+                    onClick = {
+                        onSelect(code)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+/** 금액 입력. 외화면 소수 입력 키보드를 쓰고 아래에 원화 환산 금액과 적용 환율을 보여 준다 */
+@Composable
+private fun AmountField(
+    state: TransactionEditUiState,
+    onAmountChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val code = state.currencyCode
+    val supportingText = when {
+        state.isAmountError -> stringResource(R.string.transaction_amount_error)
+
+        state.isRateUnavailable -> stringResource(R.string.transaction_rate_unavailable)
+
+        code != null && state.appliedRate != null ->
+            conversionText(code, state.appliedRate, state.rateDate, state.convertedKrw)
+
+        else -> null
+    }
+
+    OutlinedTextField(
+        value = state.amountInput,
+        onValueChange = onAmountChange,
+        modifier = modifier,
+        label = { Text(stringResource(R.string.transaction_amount_label)) },
+        suffix = { Text(code ?: stringResource(R.string.transaction_amount_suffix)) },
+        isError = state.isAmountError || state.isRateUnavailable,
+        supportingText = supportingText?.let { text -> { Text(text) } },
+        keyboardOptions = KeyboardOptions(
+            keyboardType = if (code == null) KeyboardType.Number else KeyboardType.Decimal
+        ),
+        singleLine = true
+    )
+}
+
+/** "≈ 18,131원 · 1 USD = 1,450.5원 · 2026. 11. 13. 기준" 형식의 안내 문구 */
+@Composable
+private fun conversionText(
+    code: String,
+    rate: BigDecimal,
+    rateDate: LocalDate?,
+    convertedKrw: Long?
+): String {
+    val rateText = remember(rate) { rateFormat().format(rate.stripTrailingZeros()) }
+    val rateLine = if (rateDate == null) {
+        stringResource(R.string.transaction_rate_saved, code, rateText)
+    } else {
+        val dateText = rateDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))
+        stringResource(R.string.transaction_rate_latest, code, rateText, dateText)
+    }
+    if (convertedKrw == null) return rateLine
+    val krwText = NumberFormat.getNumberInstance(Locale.KOREA).format(convertedKrw)
+    return stringResource(R.string.transaction_converted_krw, krwText, rateLine)
+}
+
+// 환율은 외화 1단위당 원화라 JPY(9.3512)처럼 소수 넷째 자리까지 보여 준다
+private fun rateFormat(): NumberFormat = NumberFormat.getNumberInstance(Locale.KOREA).apply {
+    maximumFractionDigits = 4
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -312,6 +429,8 @@ private fun LocalDate.toUtcMillis(): Long = atStartOfDay(ZoneOffset.UTC).toInsta
 private fun utcMillisToLocalDate(millis: Long): LocalDate =
     Instant.ofEpochMilli(millis).atOffset(ZoneOffset.UTC).toLocalDate()
 
+private val CURRENCY_FIELD_WIDTH = 128.dp
+
 private val previewCategories = listOf(
     Category(1, "식비", TransactionType.EXPENSE, "food", 0xFFE57373),
     Category(2, "교통", TransactionType.EXPENSE, "transport", 0xFF64B5F6),
@@ -329,6 +448,52 @@ private fun TransactionEditScreenPreview() {
                 selectedCategoryId = 1,
                 date = LocalDate.of(2026, 11, 10),
                 memo = "점심"
+            ),
+            onIntent = {}
+        )
+    }
+}
+
+private val previewUsd = ExchangeRate(
+    currencyCode = "USD",
+    currencyName = "미국 달러",
+    unit = 1,
+    baseRate = BigDecimal("1450.5"),
+    rateDate = LocalDate.of(2026, 11, 13),
+    updatedAt = Instant.parse("2026-11-13T03:00:00Z")
+)
+
+@Preview(name = "외화 입력", uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Composable
+private fun TransactionEditScreenForeignPreview() {
+    CashNoteTheme {
+        TransactionEditScreen(
+            state = TransactionEditUiState(
+                amountInput = "12.5",
+                currencyCode = "USD",
+                exchangeRates = listOf(previewUsd),
+                appliedRate = previewUsd.ratePerUnit,
+                rateDate = previewUsd.rateDate,
+                categories = previewCategories,
+                selectedCategoryId = 1,
+                date = LocalDate.of(2026, 11, 13),
+                memo = "커피"
+            ),
+            onIntent = {}
+        )
+    }
+}
+
+@Preview(name = "환율 없음", uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun TransactionEditScreenRateUnavailablePreview() {
+    CashNoteTheme {
+        TransactionEditScreen(
+            state = TransactionEditUiState(
+                amountInput = "20",
+                currencyCode = "EUR",
+                categories = previewCategories,
+                date = LocalDate.of(2026, 11, 13)
             ),
             onIntent = {}
         )

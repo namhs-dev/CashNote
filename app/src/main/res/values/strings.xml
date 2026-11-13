@@ -53,4 +53,12 @@
     <string name="transaction_not_found">내역을 찾을 수 없습니다</string>
     <string name="transaction_save_failed">저장하지 못했습니다. 다시 시도해 주세요</string>
     <string name="transaction_rate_unavailable">환율 정보가 없어 환산할 수 없습니다. 원화로 입력하거나 잠시 후 다시 시도해 주세요</string>
+    <string name="transaction_currency_label">통화</string>
+    <string name="transaction_currency_krw">KRW</string>
+    <!-- %1$s: 통화 코드, %2$s: 1단위당 원화 환율, %3$s: 환율 기준일 -->
+    <string name="transaction_rate_latest">1 %1$s = %2$s원 · %3$s 기준</string>
+    <!-- 수정 중인 외화 거래의 저장 당시 환율. %1$s: 통화 코드, %2$s: 1단위당 원화 환율 -->
+    <string name="transaction_rate_saved">1 %1$s = %2$s원 · 저장 당시 환율</string>
+    <!-- %1$s: 환산한 원화 금액, %2$s: 환율 안내 -->
+    <string name="transaction_converted_krw">≈ %1$s원 · %2$s</string>
 </resources>
