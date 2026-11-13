@@ -1,9 +1,17 @@
 package com.namhs.cashnote.data.local.database
 
+import androidx.room.Room
 import androidx.room.testing.MigrationTestHelper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.namhs.cashnote.data.repository.mapper.toDomain
+import com.namhs.cashnote.data.repository.mapper.toEntity
+import com.namhs.cashnote.domain.model.ForeignAmount
+import java.math.BigDecimal
+import java.time.LocalDate
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -100,6 +108,77 @@ class MigrationTest {
                 assertTrue(cursor.isNull(2))
                 assertTrue(cursor.isNull(3))
             }
+        }
+    }
+
+    @Test
+    fun migrate1To4_allMigrationsInOrder() {
+        // v1(첫 출시 스키마)에서 최신 버전까지 한 번에 올리는 실제 업데이트 경로
+        helper.createDatabase(TEST_DB, 1).use { db ->
+            db.execSQL(
+                "INSERT INTO categories (id, name, type, icon, color) " +
+                    "VALUES (1, '식비', 'EXPENSE', 'food', 4293227379)"
+            )
+            db.execSQL(
+                "INSERT INTO transactions " +
+                    "(id, amount, type, category_id, memo, date, created_at) " +
+                    "VALUES (1, 12500, 'EXPENSE', 1, '점심', 20401, 1762657200000)"
+            )
+        }
+
+        helper.runMigrationsAndValidate(TEST_DB, 4, true).use { db ->
+            db.query("SELECT amount, currency_code FROM transactions WHERE id = 1").use { cursor ->
+                assertEquals(1, cursor.count)
+                cursor.moveToFirst()
+                assertEquals(12_500L, cursor.getLong(0))
+                assertTrue(cursor.isNull(1))
+            }
+            db.query("SELECT COUNT(*) FROM budgets").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+            db.query("SELECT COUNT(*) FROM exchange_rates").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
+    @Test
+    fun migratedDatabase_opensWithRoomAndDaos() = runBlocking {
+        // 스키마 검증만으로는 TypeConverter·Entity 매핑까지 확인되지 않으므로 실제 DB 클래스로 열어 본다
+        helper.createDatabase(TEST_DB, 1).use { db ->
+            db.execSQL(
+                "INSERT INTO categories (id, name, type, icon, color) " +
+                    "VALUES (1, '식비', 'EXPENSE', 'food', 4293227379)"
+            )
+            db.execSQL(
+                "INSERT INTO transactions " +
+                    "(id, amount, type, category_id, memo, date, created_at) " +
+                    "VALUES (1, 12500, 'EXPENSE', 1, '점심', 20401, 1762657200000)"
+            )
+        }
+        helper.runMigrationsAndValidate(TEST_DB, 4, true).close()
+
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val database = Room.databaseBuilder(context, CashNoteDatabase::class.java, TEST_DB).build()
+        try {
+            val dao = database.transactionDao()
+
+            // v1에서 넘어온 거래는 원화 거래로 읽힌다
+            val migrated = dao.getById(1)?.toDomain()
+            assertEquals(12_500L, migrated?.amount)
+            assertEquals(LocalDate.ofEpochDay(20401), migrated?.date)
+            assertNull(migrated?.foreign)
+
+            // 마이그레이션된 DB에 외화 거래를 저장하고 그대로 읽힌다
+            val usd = ForeignAmount("USD", BigDecimal("12.50"), BigDecimal("1450.5"))
+            val id = dao.insert(
+                migrated!!.copy(id = 0, amount = usd.toKrw(), foreign = usd).toEntity()
+            )
+            assertEquals(usd, dao.getById(id)?.toDomain()?.foreign)
+        } finally {
+            database.close()
         }
     }
 
