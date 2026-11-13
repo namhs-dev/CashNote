@@ -1,6 +1,7 @@
 package com.namhs.cashnote.di
 
 import com.namhs.cashnote.BuildConfig
+import com.namhs.cashnote.data.remote.api.ExchangeRateApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -15,10 +16,9 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 
 /**
- * 환율 API 호출에 쓰는 Json, OkHttpClient, Retrofit을 제공한다.
+ * 환율 API 호출에 쓰는 Json, OkHttpClient, Retrofit, [ExchangeRateApi]를 제공한다.
  *
  * 로깅 인터셉터는 debug 빌드에서만 붙여 release에 요청·응답(API 키 포함)이 남지 않게 한다.
- * API 인터페이스는 #36에서 이 Retrofit으로 만든다.
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -56,4 +56,13 @@ object NetworkModule {
         .client(okHttpClient)
         .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
         .build()
+
+    @Provides
+    @Singleton
+    fun provideExchangeRateApi(retrofit: Retrofit): ExchangeRateApi =
+        retrofit.create(ExchangeRateApi::class.java)
+
+    @Provides
+    @ExchangeRateApiKey
+    fun provideExchangeRateApiKey(): String = BuildConfig.EXCHANGE_RATE_API_KEY
 }
