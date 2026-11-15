@@ -10,6 +10,7 @@ import com.namhs.cashnote.domain.usecase.AddTransactionUseCase
 import com.namhs.cashnote.domain.usecase.GetCategoriesUseCase
 import com.namhs.cashnote.domain.usecase.GetExchangeRatesUseCase
 import com.namhs.cashnote.domain.usecase.GetTransactionUseCase
+import com.namhs.cashnote.domain.usecase.ObserveNetworkStatusUseCase
 import com.namhs.cashnote.domain.usecase.RefreshExchangeRatesUseCase
 import com.namhs.cashnote.domain.usecase.UpdateTransactionUseCase
 import com.namhs.cashnote.presentation.base.MviViewModel
@@ -32,7 +33,8 @@ class TransactionEditViewModel @Inject constructor(
     private val addTransaction: AddTransactionUseCase,
     private val updateTransaction: UpdateTransactionUseCase,
     private val getExchangeRates: GetExchangeRatesUseCase,
-    private val refreshExchangeRates: RefreshExchangeRatesUseCase
+    private val refreshExchangeRates: RefreshExchangeRatesUseCase,
+    private val observeNetworkStatus: ObserveNetworkStatusUseCase
 ) : MviViewModel<TransactionEditUiState, TransactionEditIntent, TransactionEditSideEffect>(
     TransactionEditUiState(date = LocalDate.now())
 ) {
@@ -45,6 +47,7 @@ class TransactionEditViewModel @Inject constructor(
     init {
         observeCategories()
         observeExchangeRates()
+        observeNetwork()
         if (transactionId != 0L) loadTransaction(transactionId)
     }
 
@@ -115,6 +118,13 @@ class TransactionEditViewModel @Inject constructor(
         }
     }
 
+    // 오프라인이면 환율 안내에 그 사실을 함께 보여 준다
+    private fun observeNetwork() {
+        viewModelScope.launch {
+            observeNetworkStatus().collect { isOnline -> setState { copy(isOffline = !isOnline) } }
+        }
+    }
+
     private suspend fun refreshExchangeRatesQuietly() {
         try {
             refreshExchangeRates()
@@ -130,12 +140,17 @@ class TransactionEditViewModel @Inject constructor(
      * 수정 중인 거래와 같은 통화면 그때 적용한 환율을 그대로 쓰고, 아니면 저장된 최신 환율을 쓴다.
      */
     private fun TransactionEditUiState.withResolvedRate(): TransactionEditUiState {
-        val code = currencyCode ?: return copy(appliedRate = null, rateDate = null)
+        val code = currencyCode
+            ?: return copy(appliedRate = null, rateDate = null, rateUpdatedAt = null)
         original?.foreign?.takeIf { it.currencyCode == code }?.let {
-            return copy(appliedRate = it.appliedRate, rateDate = null)
+            return copy(appliedRate = it.appliedRate, rateDate = null, rateUpdatedAt = null)
         }
         val rate = exchangeRates.find { it.currencyCode == code }
-        return copy(appliedRate = rate?.ratePerUnit, rateDate = rate?.rateDate)
+        return copy(
+            appliedRate = rate?.ratePerUnit,
+            rateDate = rate?.rateDate,
+            rateUpdatedAt = rate?.updatedAt
+        )
     }
 
     private fun loadTransaction(id: Long) {

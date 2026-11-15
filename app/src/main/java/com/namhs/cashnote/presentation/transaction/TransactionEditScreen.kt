@@ -64,6 +64,7 @@ import java.math.BigDecimal
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -274,10 +275,25 @@ private fun AmountField(
     val supportingText = when {
         state.isAmountError -> stringResource(R.string.transaction_amount_error)
 
+        state.isRateUnavailableOffline ->
+            stringResource(R.string.transaction_rate_unavailable_offline)
+
         state.isRateUnavailable -> stringResource(R.string.transaction_rate_unavailable)
 
-        code != null && state.appliedRate != null ->
-            conversionText(code, state.appliedRate, state.rateDate, state.convertedKrw)
+        code != null && state.appliedRate != null -> {
+            val conversion = conversionText(
+                code = code,
+                rate = state.appliedRate,
+                rateDate = state.rateDate,
+                rateUpdatedAt = state.rateUpdatedAt,
+                convertedKrw = state.convertedKrw
+            )
+            if (state.isUsingCachedRateOffline) {
+                "$conversion\n${stringResource(R.string.transaction_rate_offline_cached)}"
+            } else {
+                conversion
+            }
+        }
 
         else -> null
     }
@@ -297,9 +313,30 @@ private fun AmountField(
     )
 }
 
-/** "≈ 18,131원 · 1 USD = 1,450.5원 · 2026. 11. 13. 기준" 형식의 안내 문구 */
+/**
+ * "≈ 18,131원 · 1 USD = 1,450.5원 · 2026. 11. 13. 기준" 형식의 안내 문구.
+ * 최신 환율이면 다음 줄에 "2026. 11. 16. 오후 2:30 갱신"처럼 받아 저장한 시각을 붙인다.
+ */
 @Composable
 private fun conversionText(
+    code: String,
+    rate: BigDecimal,
+    rateDate: LocalDate?,
+    rateUpdatedAt: Instant?,
+    convertedKrw: Long?
+): String {
+    val conversionLine = conversionLine(code, rate, rateDate, convertedKrw)
+    if (rateUpdatedAt == null) return conversionLine
+    val updatedAtText = remember(rateUpdatedAt) {
+        rateUpdatedAt.atZone(ZoneId.systemDefault())
+            .format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT))
+    }
+    val updatedAtLine = stringResource(R.string.transaction_rate_updated_at, updatedAtText)
+    return "$conversionLine\n$updatedAtLine"
+}
+
+@Composable
+private fun conversionLine(
     code: String,
     rate: BigDecimal,
     rateDate: LocalDate?,
@@ -474,10 +511,32 @@ private fun TransactionEditScreenForeignPreview() {
                 exchangeRates = listOf(previewUsd),
                 appliedRate = previewUsd.ratePerUnit,
                 rateDate = previewUsd.rateDate,
+                rateUpdatedAt = previewUsd.updatedAt,
                 categories = previewCategories,
                 selectedCategoryId = 1,
                 date = LocalDate.of(2026, 11, 13),
                 memo = "커피"
+            ),
+            onIntent = {}
+        )
+    }
+}
+
+@Preview(name = "오프라인 외화 입력", uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Composable
+private fun TransactionEditScreenOfflinePreview() {
+    CashNoteTheme {
+        TransactionEditScreen(
+            state = TransactionEditUiState(
+                amountInput = "12.5",
+                currencyCode = "USD",
+                exchangeRates = listOf(previewUsd),
+                appliedRate = previewUsd.ratePerUnit,
+                rateDate = previewUsd.rateDate,
+                rateUpdatedAt = previewUsd.updatedAt,
+                isOffline = true,
+                categories = previewCategories,
+                date = LocalDate.of(2026, 11, 13)
             ),
             onIntent = {}
         )
