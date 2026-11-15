@@ -61,4 +61,6 @@
     <string name="transaction_rate_saved">1 %1$s = %2$s원 · 저장 당시 환율</string>
     <!-- %1$s: 환산한 원화 금액, %2$s: 환율 안내 -->
     <string name="transaction_converted_krw">≈ %1$s원 · %2$s</string>
+    <!-- 환율을 받아 저장한 시각. %1$s: 날짜와 시각 -->
+    <string name="transaction_rate_updated_at">%1$s 갱신</string>
 </resources>

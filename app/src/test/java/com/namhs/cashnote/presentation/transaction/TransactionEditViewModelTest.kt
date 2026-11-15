@@ -266,6 +266,7 @@ class TransactionEditViewModelTest {
         assertEquals(listOf("JPY", "USD"), state.foreignCurrencyOptions.sorted())
         assertEquals(0, BigDecimal("9.3512").compareTo(state.appliedRate))
         assertEquals(friday, state.rateDate)
+        assertEquals(updatedAt, state.rateUpdatedAt)
         // 1,000엔 × 9.3512 = 9351.2 → 9351원
         assertEquals(9_351L, state.convertedKrw)
     }
@@ -282,6 +283,7 @@ class TransactionEditViewModelTest {
         val state = viewModel.uiState.value
         assertEquals("12", state.amountInput)
         assertNull(state.appliedRate)
+        assertNull(state.rateUpdatedAt)
         assertNull(state.convertedKrw)
     }
 
@@ -377,6 +379,7 @@ class TransactionEditViewModelTest {
         assertEquals("20.00", state.amountInput)
         assertEquals(BigDecimal("1500"), state.appliedRate)
         assertNull(state.rateDate)
+        assertNull(state.rateUpdatedAt)
     }
 
     @Test

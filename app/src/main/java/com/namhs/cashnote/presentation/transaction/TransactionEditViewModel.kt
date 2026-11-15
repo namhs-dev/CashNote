@@ -130,12 +130,17 @@ class TransactionEditViewModel @Inject constructor(
      * 수정 중인 거래와 같은 통화면 그때 적용한 환율을 그대로 쓰고, 아니면 저장된 최신 환율을 쓴다.
      */
     private fun TransactionEditUiState.withResolvedRate(): TransactionEditUiState {
-        val code = currencyCode ?: return copy(appliedRate = null, rateDate = null)
+        val code = currencyCode
+            ?: return copy(appliedRate = null, rateDate = null, rateUpdatedAt = null)
         original?.foreign?.takeIf { it.currencyCode == code }?.let {
-            return copy(appliedRate = it.appliedRate, rateDate = null)
+            return copy(appliedRate = it.appliedRate, rateDate = null, rateUpdatedAt = null)
         }
         val rate = exchangeRates.find { it.currencyCode == code }
-        return copy(appliedRate = rate?.ratePerUnit, rateDate = rate?.rateDate)
+        return copy(
+            appliedRate = rate?.ratePerUnit,
+            rateDate = rate?.rateDate,
+            rateUpdatedAt = rate?.updatedAt
+        )
     }
 
     private fun loadTransaction(id: Long) {

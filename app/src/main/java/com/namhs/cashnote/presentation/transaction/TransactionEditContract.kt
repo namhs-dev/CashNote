@@ -6,6 +6,7 @@ import com.namhs.cashnote.domain.model.ExchangeRate
 import com.namhs.cashnote.domain.model.ForeignAmount
 import com.namhs.cashnote.domain.model.TransactionType
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDate
 
 /** 거래 입력·수정 화면 상태 */
@@ -24,6 +25,8 @@ data class TransactionEditUiState(
     val appliedRate: BigDecimal? = null,
     /** [appliedRate]의 기준 영업일. 기존 거래의 환율을 그대로 쓰면 null */
     val rateDate: LocalDate? = null,
+    /** [appliedRate]를 받아 저장한 시각. 기존 거래의 환율을 그대로 쓰면 null */
+    val rateUpdatedAt: Instant? = null,
     val type: TransactionType = TransactionType.EXPENSE,
     /** 현재 유형에 해당하는 카테고리 목록 */
     val categories: List<Category> = emptyList(),
