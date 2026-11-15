@@ -10,6 +10,7 @@ import com.namhs.cashnote.domain.usecase.AddTransactionUseCase
 import com.namhs.cashnote.domain.usecase.GetCategoriesUseCase
 import com.namhs.cashnote.domain.usecase.GetExchangeRatesUseCase
 import com.namhs.cashnote.domain.usecase.GetTransactionUseCase
+import com.namhs.cashnote.domain.usecase.ObserveNetworkStatusUseCase
 import com.namhs.cashnote.domain.usecase.RefreshExchangeRatesUseCase
 import com.namhs.cashnote.domain.usecase.UpdateTransactionUseCase
 import com.namhs.cashnote.presentation.base.MviViewModel
@@ -32,7 +33,8 @@ class TransactionEditViewModel @Inject constructor(
     private val addTransaction: AddTransactionUseCase,
     private val updateTransaction: UpdateTransactionUseCase,
     private val getExchangeRates: GetExchangeRatesUseCase,
-    private val refreshExchangeRates: RefreshExchangeRatesUseCase
+    private val refreshExchangeRates: RefreshExchangeRatesUseCase,
+    private val observeNetworkStatus: ObserveNetworkStatusUseCase
 ) : MviViewModel<TransactionEditUiState, TransactionEditIntent, TransactionEditSideEffect>(
     TransactionEditUiState(date = LocalDate.now())
 ) {
@@ -45,6 +47,7 @@ class TransactionEditViewModel @Inject constructor(
     init {
         observeCategories()
         observeExchangeRates()
+        observeNetwork()
         if (transactionId != 0L) loadTransaction(transactionId)
     }
 
@@ -112,6 +115,13 @@ class TransactionEditViewModel @Inject constructor(
                     launch { refreshExchangeRatesQuietly() }
                 }
             }
+        }
+    }
+
+    // 오프라인이면 환율 안내에 그 사실을 함께 보여 준다
+    private fun observeNetwork() {
+        viewModelScope.launch {
+            observeNetworkStatus().collect { isOnline -> setState { copy(isOffline = !isOnline) } }
         }
     }
 

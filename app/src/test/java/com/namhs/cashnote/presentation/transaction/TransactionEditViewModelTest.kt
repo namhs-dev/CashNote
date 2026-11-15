@@ -12,10 +12,12 @@ import com.namhs.cashnote.domain.usecase.AddTransactionUseCase
 import com.namhs.cashnote.domain.usecase.GetCategoriesUseCase
 import com.namhs.cashnote.domain.usecase.GetExchangeRatesUseCase
 import com.namhs.cashnote.domain.usecase.GetTransactionUseCase
+import com.namhs.cashnote.domain.usecase.ObserveNetworkStatusUseCase
 import com.namhs.cashnote.domain.usecase.RefreshExchangeRatesUseCase
 import com.namhs.cashnote.domain.usecase.UpdateTransactionUseCase
 import com.namhs.cashnote.testing.FakeCategoryRepository
 import com.namhs.cashnote.testing.FakeExchangeRateRepository
+import com.namhs.cashnote.testing.FakeNetworkMonitor
 import com.namhs.cashnote.testing.FakeTransactionRepository
 import com.namhs.cashnote.testing.MainDispatcherRule
 import java.io.IOException
@@ -64,6 +66,7 @@ class TransactionEditViewModelTest {
     private val transactionRepository = FakeTransactionRepository(listOf(existing, existingForeign))
     private val categoryRepository = FakeCategoryRepository(listOf(food, transport, salary))
     private val exchangeRateRepository = FakeExchangeRateRepository()
+    private val networkMonitor = FakeNetworkMonitor()
 
     // 초기 상태
 
@@ -437,6 +440,83 @@ class TransactionEditViewModelTest {
         assertEquals("12", TransactionEditViewModel.sanitizeAmount("12.5", isForeign = false))
     }
 
+    // 오프라인 안내
+
+    @Test
+    fun online_noOfflineNotice() {
+        exchangeRateRepository.rates.value = listOf(usd)
+        val viewModel = viewModel()
+
+        viewModel.onIntent(TransactionEditIntent.CurrencySelected("USD"))
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isOffline)
+        assertFalse(state.isUsingCachedRateOffline)
+    }
+
+    @Test
+    fun offline_foreignWithCachedRate_usesCachedRate() {
+        exchangeRateRepository.rates.value = listOf(usd)
+        networkMonitor.isOnline.value = false
+        val viewModel = viewModel()
+
+        viewModel.onIntent(TransactionEditIntent.CurrencySelected("USD"))
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isOffline)
+        assertTrue(state.isUsingCachedRateOffline)
+        assertFalse(state.isRateUnavailableOffline)
+    }
+
+    @Test
+    fun offline_krw_noCachedRateNotice() {
+        exchangeRateRepository.rates.value = listOf(usd)
+        networkMonitor.isOnline.value = false
+
+        val state = viewModel().uiState.value
+
+        assertTrue(state.isOffline)
+        assertFalse(state.isUsingCachedRateOffline)
+        assertFalse(state.isRateUnavailableOffline)
+    }
+
+    @Test
+    fun offline_foreignWithoutRate_isRateUnavailableOffline() {
+        exchangeRateRepository.rates.value = listOf(usd)
+        networkMonitor.isOnline.value = false
+        val viewModel = viewModel()
+
+        viewModel.onIntent(TransactionEditIntent.CurrencySelected("EUR"))
+
+        assertTrue(viewModel.uiState.value.isRateUnavailableOffline)
+    }
+
+    @Test
+    fun offline_editForeignSameCurrency_noCachedRateNotice() {
+        // 저장 당시 환율은 네트워크와 상관없으므로 오프라인 안내를 붙이지 않는다
+        exchangeRateRepository.rates.value = listOf(eur)
+        networkMonitor.isOnline.value = false
+
+        val state = viewModel(transactionId = existingForeign.id).uiState.value
+
+        assertTrue(state.isOffline)
+        assertFalse(state.isUsingCachedRateOffline)
+    }
+
+    @Test
+    fun networkRestored_clearsOffline() {
+        exchangeRateRepository.rates.value = listOf(usd)
+        networkMonitor.isOnline.value = false
+        val viewModel = viewModel()
+        viewModel.onIntent(TransactionEditIntent.CurrencySelected("USD"))
+
+        networkMonitor.isOnline.value = true
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isOffline)
+        assertFalse(state.isUsingCachedRateOffline)
+    }
+
     private fun viewModel(transactionId: Long = 0) = TransactionEditViewModel(
         savedStateHandle = SavedStateHandle(
             mapOf(TransactionEditViewModel.ARG_TRANSACTION_ID to transactionId)
@@ -446,6 +526,7 @@ class TransactionEditViewModelTest {
         addTransaction = AddTransactionUseCase(transactionRepository),
         updateTransaction = UpdateTransactionUseCase(transactionRepository),
         getExchangeRates = GetExchangeRatesUseCase(exchangeRateRepository),
-        refreshExchangeRates = RefreshExchangeRatesUseCase(exchangeRateRepository)
+        refreshExchangeRates = RefreshExchangeRatesUseCase(exchangeRateRepository),
+        observeNetworkStatus = ObserveNetworkStatusUseCase(networkMonitor)
     )
 }

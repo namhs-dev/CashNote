@@ -275,16 +275,25 @@ private fun AmountField(
     val supportingText = when {
         state.isAmountError -> stringResource(R.string.transaction_amount_error)
 
+        state.isRateUnavailableOffline ->
+            stringResource(R.string.transaction_rate_unavailable_offline)
+
         state.isRateUnavailable -> stringResource(R.string.transaction_rate_unavailable)
 
-        code != null && state.appliedRate != null ->
-            conversionText(
+        code != null && state.appliedRate != null -> {
+            val conversion = conversionText(
                 code = code,
                 rate = state.appliedRate,
                 rateDate = state.rateDate,
                 rateUpdatedAt = state.rateUpdatedAt,
                 convertedKrw = state.convertedKrw
             )
+            if (state.isUsingCachedRateOffline) {
+                "$conversion\n${stringResource(R.string.transaction_rate_offline_cached)}"
+            } else {
+                conversion
+            }
+        }
 
         else -> null
     }
@@ -507,6 +516,27 @@ private fun TransactionEditScreenForeignPreview() {
                 selectedCategoryId = 1,
                 date = LocalDate.of(2026, 11, 13),
                 memo = "커피"
+            ),
+            onIntent = {}
+        )
+    }
+}
+
+@Preview(name = "오프라인 외화 입력", uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Composable
+private fun TransactionEditScreenOfflinePreview() {
+    CashNoteTheme {
+        TransactionEditScreen(
+            state = TransactionEditUiState(
+                amountInput = "12.5",
+                currencyCode = "USD",
+                exchangeRates = listOf(previewUsd),
+                appliedRate = previewUsd.ratePerUnit,
+                rateDate = previewUsd.rateDate,
+                rateUpdatedAt = previewUsd.updatedAt,
+                isOffline = true,
+                categories = previewCategories,
+                date = LocalDate.of(2026, 11, 13)
             ),
             onIntent = {}
         )

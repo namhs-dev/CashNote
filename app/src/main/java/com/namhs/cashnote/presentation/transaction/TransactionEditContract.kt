@@ -27,6 +27,8 @@ data class TransactionEditUiState(
     val rateDate: LocalDate? = null,
     /** [appliedRate]를 받아 저장한 시각. 기존 거래의 환율을 그대로 쓰면 null */
     val rateUpdatedAt: Instant? = null,
+    /** 인터넷에 연결돼 있지 않다 */
+    val isOffline: Boolean = false,
     val type: TransactionType = TransactionType.EXPENSE,
     /** 현재 유형에 해당하는 카테고리 목록 */
     val categories: List<Category> = emptyList(),
@@ -51,6 +53,14 @@ data class TransactionEditUiState(
     /** 외화를 골랐지만 환산할 환율이 없다 */
     val isRateUnavailable: Boolean
         get() = currencyCode != null && appliedRate == null
+
+    /** 오프라인이라 새 환율을 받지 못하고, 전에 받아 둔 최신 환율로 환산한다. 기존 거래의 저장 당시 환율은 해당하지 않는다 */
+    val isUsingCachedRateOffline: Boolean
+        get() = isOffline && rateUpdatedAt != null
+
+    /** 외화를 골랐는데 받아 둔 환율이 없고, 오프라인이라 받을 수도 없다 */
+    val isRateUnavailableOffline: Boolean
+        get() = isOffline && isRateUnavailable
 
     /** 외화 입력값을 원화로 환산한 금액. 원화이거나 입력·환율이 없으면 null */
     val convertedKrw: Long?
