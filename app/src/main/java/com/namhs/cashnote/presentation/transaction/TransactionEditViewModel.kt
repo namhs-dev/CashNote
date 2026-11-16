@@ -7,6 +7,7 @@ import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.ForeignAmount
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.usecase.AddTransactionUseCase
+import com.namhs.cashnote.domain.usecase.CheckBudgetAlertUseCase
 import com.namhs.cashnote.domain.usecase.GetCategoriesUseCase
 import com.namhs.cashnote.domain.usecase.GetDefaultCurrencyUseCase
 import com.namhs.cashnote.domain.usecase.GetExchangeRatesUseCase
@@ -18,6 +19,7 @@ import com.namhs.cashnote.presentation.base.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,7 +39,8 @@ class TransactionEditViewModel @Inject constructor(
     private val getExchangeRates: GetExchangeRatesUseCase,
     private val refreshExchangeRates: RefreshExchangeRatesUseCase,
     private val observeNetworkStatus: ObserveNetworkStatusUseCase,
-    private val getDefaultCurrency: GetDefaultCurrencyUseCase
+    private val getDefaultCurrency: GetDefaultCurrencyUseCase,
+    private val checkBudgetAlert: CheckBudgetAlertUseCase
 ) : MviViewModel<TransactionEditUiState, TransactionEditIntent, TransactionEditSideEffect>(
     TransactionEditUiState(date = LocalDate.now())
 ) {
@@ -251,6 +254,7 @@ class TransactionEditViewModel @Inject constructor(
                         )
                     )
                 }
+                checkBudgetAlertQuietly(YearMonth.from(state.date))
                 postSideEffect(TransactionEditSideEffect.NavigateBack)
             } catch (e: CancellationException) {
                 throw e
@@ -258,6 +262,17 @@ class TransactionEditViewModel @Inject constructor(
                 setState { copy(isSaving = false) }
                 showMessage(R.string.transaction_save_failed)
             }
+        }
+    }
+
+    // 저장은 이미 끝났으므로 알림 확인이 실패해도 저장 실패로 알리지 않는다
+    private suspend fun checkBudgetAlertQuietly(month: YearMonth) {
+        try {
+            checkBudgetAlert(month)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // 알림을 못 보내도 다음 저장 때 다시 확인한다
         }
     }
 
