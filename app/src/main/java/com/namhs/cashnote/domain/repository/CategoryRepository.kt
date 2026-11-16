@@ -16,4 +16,7 @@ interface CategoryRepository {
 
     /** id가 같은 카테고리의 이름·색상 등을 바꾼다. */
     suspend fun update(category: Category)
+
+    /** 카테고리를 지운다. 이 카테고리를 쓰는 거래가 있으면 예외를 던진다. */
+    suspend fun delete(category: Category)
 }

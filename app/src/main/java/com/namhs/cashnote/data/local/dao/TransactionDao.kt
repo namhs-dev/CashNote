@@ -70,4 +70,8 @@ interface TransactionDao {
     /** 실행 취소 시 다시 넣을 수 있도록 Entity 전체를 받는다. */
     @Delete
     suspend fun delete(transaction: TransactionEntity)
+
+    /** 카테고리를 쓰는 거래 수. 카테고리 삭제 전에 확인한다. */
+    @Query("SELECT COUNT(*) FROM transactions WHERE category_id = :categoryId")
+    suspend fun countByCategory(categoryId: Long): Int
 }

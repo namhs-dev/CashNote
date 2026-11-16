@@ -26,7 +26,10 @@ data class CategoryEditorState(
     /** 표시 색상. 0xAARRGGBB */
     val color: Long,
     val nameError: CategoryNameError? = null,
-    val isSaving: Boolean = false
+    /** 저장 또는 삭제 중. 이때는 버튼과 닫기를 막는다 */
+    val isSaving: Boolean = false,
+    /** 삭제 확인 다이얼로그를 띄웠다 */
+    val isConfirmingDelete: Boolean = false
 ) {
     val isNew: Boolean
         get() = categoryId == null
@@ -60,6 +63,13 @@ sealed interface CategoryManageIntent {
     data object EditorSaveClicked : CategoryManageIntent
 
     data object EditorDismissed : CategoryManageIntent
+
+    /** 수정 다이얼로그의 삭제 버튼. 확인 다이얼로그를 띄운다 */
+    data object EditorDeleteClicked : CategoryManageIntent
+
+    data object DeleteConfirmed : CategoryManageIntent
+
+    data object DeleteCancelled : CategoryManageIntent
 }
 
 /** 카테고리 관리 화면의 일회성 이벤트 */
@@ -68,4 +78,7 @@ sealed interface CategoryManageSideEffect {
 
     /** 저장 실패 등 사용자에게 알릴 메시지 */
     data class ShowMessage(@StringRes val messageRes: Int) : CategoryManageSideEffect
+
+    /** 이 카테고리를 쓰는 거래가 있어 지우지 못했다 */
+    data class ShowCategoryInUse(val transactionCount: Int) : CategoryManageSideEffect
 }

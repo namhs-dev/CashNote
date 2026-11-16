@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.map
 /**
  * 메모리에 카테고리를 담는 가짜 Repository.
  *
- * [failure]가 있으면 추가·수정에서 이 예외를 던진다.
+ * [failure]가 있으면 추가·수정·삭제에서 이 예외를 던진다.
  */
 class FakeCategoryRepository(initial: List<Category> = emptyList()) : CategoryRepository {
     /** 테스트에서 값을 바꿔 카테고리 변경을 흉내 낸다 */
@@ -33,5 +33,10 @@ class FakeCategoryRepository(initial: List<Category> = emptyList()) : CategoryRe
     override suspend fun update(category: Category) {
         failure?.let { throw it }
         categories.value = categories.value.map { if (it.id == category.id) category else it }
+    }
+
+    override suspend fun delete(category: Category) {
+        failure?.let { throw it }
+        categories.value = categories.value.filterNot { it.id == category.id }
     }
 }

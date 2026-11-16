@@ -3,7 +3,9 @@ package com.namhs.cashnote.presentation.category
 import androidx.lifecycle.viewModelScope
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.Category
+import com.namhs.cashnote.domain.model.CategoryDeleteResult
 import com.namhs.cashnote.domain.usecase.AddCategoryUseCase
+import com.namhs.cashnote.domain.usecase.DeleteCategoryUseCase
 import com.namhs.cashnote.domain.usecase.GetCategoriesUseCase
 import com.namhs.cashnote.domain.usecase.UpdateCategoryUseCase
 import com.namhs.cashnote.presentation.base.MviViewModel
@@ -20,7 +22,8 @@ import kotlinx.coroutines.launch
 class CategoryManageViewModel @Inject constructor(
     private val getCategories: GetCategoriesUseCase,
     private val addCategory: AddCategoryUseCase,
-    private val updateCategory: UpdateCategoryUseCase
+    private val updateCategory: UpdateCategoryUseCase,
+    private val deleteCategory: DeleteCategoryUseCase
 ) : MviViewModel<CategoryManageUiState, CategoryManageIntent, CategoryManageSideEffect>(
     CategoryManageUiState()
 ) {
@@ -64,6 +67,47 @@ class CategoryManageViewModel @Inject constructor(
                 // 저장 중에는 닫지 않는다. 저장이 끝나면 알아서 닫힌다
                 if (currentState.editor?.isSaving == true) return
                 setState { copy(editor = null) }
+            }
+
+            CategoryManageIntent.EditorDeleteClicked -> updateEditor {
+                if (isNew) this else copy(isConfirmingDelete = true)
+            }
+
+            CategoryManageIntent.DeleteConfirmed -> deleteEditingCategory()
+
+            CategoryManageIntent.DeleteCancelled -> updateEditor {
+                copy(isConfirmingDelete = false)
+            }
+        }
+    }
+
+    private fun deleteEditingCategory() {
+        val state = currentState
+        val editor = state.editor ?: return
+        if (editor.isSaving) return
+        val category = state.categories.firstOrNull { it.id == editor.categoryId } ?: return
+
+        updateEditor { copy(isSaving = true, isConfirmingDelete = false) }
+        viewModelScope.launch {
+            try {
+                when (val result = deleteCategory(category)) {
+                    CategoryDeleteResult.Deleted -> setState { copy(editor = null) }
+
+                    // 수정 다이얼로그는 그대로 두어 이름·색상만 바꾸는 쪽으로 이어갈 수 있게 한다
+                    is CategoryDeleteResult.InUse -> {
+                        updateEditor { copy(isSaving = false) }
+                        postSideEffect(
+                            CategoryManageSideEffect.ShowCategoryInUse(result.transactionCount)
+                        )
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                updateEditor { copy(isSaving = false) }
+                postSideEffect(
+                    CategoryManageSideEffect.ShowMessage(R.string.category_delete_failed)
+                )
             }
         }
     }

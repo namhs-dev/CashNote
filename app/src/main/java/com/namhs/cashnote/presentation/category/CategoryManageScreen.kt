@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -67,6 +68,15 @@ fun CategoryManageRoute(onBack: () -> Unit, viewModel: CategoryManageViewModel =
                 // 스낵바가 닫힐 때까지 다음 이벤트 처리가 막히지 않도록 따로 띄운다
                 is CategoryManageSideEffect.ShowMessage -> launch {
                     snackbarHostState.showSnackbar(resources.getString(effect.messageRes))
+                }
+
+                is CategoryManageSideEffect.ShowCategoryInUse -> launch {
+                    snackbarHostState.showSnackbar(
+                        resources.getString(
+                            R.string.category_delete_in_use,
+                            effect.transactionCount
+                        )
+                    )
                 }
             }
         }
@@ -135,6 +145,11 @@ fun CategoryManageScreen(
 
     state.editor?.let { editor ->
         CategoryEditorDialog(editor = editor, onIntent = onIntent)
+        if (editor.isConfirmingDelete) {
+            // 입력 중에 바꾼 이름이 아니라 저장된 이름으로 묻는다
+            val savedName = state.categories.firstOrNull { it.id == editor.categoryId }?.name
+            DeleteConfirmDialog(name = savedName ?: editor.name, onIntent = onIntent)
+        }
     }
 }
 
@@ -234,7 +249,43 @@ private fun CategoryEditorDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = { onIntent(CategoryManageIntent.EditorDismissed) }) {
+            Row {
+                // 새 카테고리는 아직 저장 전이라 지울 것이 없다
+                if (!editor.isNew) {
+                    TextButton(
+                        onClick = { onIntent(CategoryManageIntent.EditorDeleteClicked) },
+                        enabled = !editor.isSaving
+                    ) {
+                        Text(
+                            text = stringResource(R.string.action_delete),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+                TextButton(onClick = { onIntent(CategoryManageIntent.EditorDismissed) }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun DeleteConfirmDialog(name: String, onIntent: (CategoryManageIntent) -> Unit) {
+    AlertDialog(
+        onDismissRequest = { onIntent(CategoryManageIntent.DeleteCancelled) },
+        title = { Text(stringResource(R.string.category_delete_confirm_title, name)) },
+        text = { Text(stringResource(R.string.category_delete_confirm_message)) },
+        confirmButton = {
+            TextButton(onClick = { onIntent(CategoryManageIntent.DeleteConfirmed) }) {
+                Text(
+                    text = stringResource(R.string.action_delete),
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { onIntent(CategoryManageIntent.DeleteCancelled) }) {
                 Text(stringResource(R.string.action_cancel))
             }
         }

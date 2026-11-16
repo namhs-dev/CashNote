@@ -51,6 +51,9 @@ class TransactionRepositoryImpl @Inject constructor(private val transactionDao: 
     override suspend fun delete(transaction: Transaction) {
         transactionDao.delete(transaction.toEntity())
     }
+
+    override suspend fun countByCategory(categoryId: Long): Int =
+        transactionDao.countByCategory(categoryId)
 }
 
 // 해당 월 1일 이상, 다음 달 1일 미만

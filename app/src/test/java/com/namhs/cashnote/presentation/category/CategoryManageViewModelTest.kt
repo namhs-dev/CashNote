@@ -3,13 +3,18 @@ package com.namhs.cashnote.presentation.category
 import app.cash.turbine.test
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.Category
+import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.usecase.AddCategoryUseCase
+import com.namhs.cashnote.domain.usecase.DeleteCategoryUseCase
 import com.namhs.cashnote.domain.usecase.GetCategoriesUseCase
 import com.namhs.cashnote.domain.usecase.UpdateCategoryUseCase
 import com.namhs.cashnote.testing.FakeCategoryRepository
+import com.namhs.cashnote.testing.FakeTransactionRepository
 import com.namhs.cashnote.testing.MainDispatcherRule
 import java.io.IOException
+import java.time.Instant
+import java.time.LocalDate
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -28,11 +33,113 @@ class CategoryManageViewModelTest {
 
     private val categoryRepository = FakeCategoryRepository(listOf(food, transport, salary))
 
+    // 식비는 거래 2건이 쓰고 있고, 교통·급여는 쓰는 거래가 없다
+    private val transactionRepository = FakeTransactionRepository(
+        listOf(transaction(1, food.id), transaction(2, food.id))
+    )
+
+    private fun transaction(id: Long, categoryId: Long) = Transaction(
+        id = id,
+        amount = 10_000,
+        type = TransactionType.EXPENSE,
+        categoryId = categoryId,
+        memo = "",
+        date = LocalDate.of(2026, 11, 16),
+        createdAt = Instant.parse("2026-11-16T03:00:00Z")
+    )
+
     private fun viewModel() = CategoryManageViewModel(
         getCategories = GetCategoriesUseCase(categoryRepository),
         addCategory = AddCategoryUseCase(categoryRepository),
-        updateCategory = UpdateCategoryUseCase(categoryRepository)
+        updateCategory = UpdateCategoryUseCase(categoryRepository),
+        deleteCategory = DeleteCategoryUseCase(categoryRepository, transactionRepository)
     )
+
+    // 삭제
+
+    @Test
+    fun deleteClicked_asksConfirmation() {
+        val viewModel = viewModel()
+        viewModel.onIntent(CategoryManageIntent.CategoryClicked(transport))
+
+        viewModel.onIntent(CategoryManageIntent.EditorDeleteClicked)
+
+        assertTrue(viewModel.uiState.value.editor!!.isConfirmingDelete)
+        assertEquals(3, categoryRepository.categories.value.size)
+    }
+
+    @Test
+    fun deleteClicked_newCategory_isIgnored() {
+        val viewModel = viewModel()
+        viewModel.onIntent(CategoryManageIntent.AddClicked)
+
+        viewModel.onIntent(CategoryManageIntent.EditorDeleteClicked)
+
+        assertFalse(viewModel.uiState.value.editor!!.isConfirmingDelete)
+    }
+
+    @Test
+    fun deleteCancelled_keepsEditorAndCategory() {
+        val viewModel = viewModel()
+        viewModel.onIntent(CategoryManageIntent.CategoryClicked(transport))
+        viewModel.onIntent(CategoryManageIntent.EditorDeleteClicked)
+
+        viewModel.onIntent(CategoryManageIntent.DeleteCancelled)
+
+        val editor = viewModel.uiState.value.editor
+        assertFalse(editor!!.isConfirmingDelete)
+        assertEquals(transport.id, editor.categoryId)
+        assertEquals(3, categoryRepository.categories.value.size)
+    }
+
+    @Test
+    fun deleteConfirmed_unusedCategory_deletesAndClosesEditor() {
+        val viewModel = viewModel()
+        viewModel.onIntent(CategoryManageIntent.CategoryClicked(transport))
+        viewModel.onIntent(CategoryManageIntent.EditorDeleteClicked)
+
+        viewModel.onIntent(CategoryManageIntent.DeleteConfirmed)
+
+        assertNull(viewModel.uiState.value.editor)
+        assertEquals(listOf(food), viewModel.uiState.value.categories)
+    }
+
+    @Test
+    fun deleteConfirmed_usedCategory_showsCountAndKeepsCategory() = runTest {
+        val viewModel = viewModel()
+        viewModel.onIntent(CategoryManageIntent.CategoryClicked(food))
+        viewModel.onIntent(CategoryManageIntent.EditorDeleteClicked)
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(CategoryManageIntent.DeleteConfirmed)
+
+            assertEquals(CategoryManageSideEffect.ShowCategoryInUse(2), awaitItem())
+        }
+        // 수정 다이얼로그는 남겨 두어 이름·색상 수정으로 이어갈 수 있다
+        val editor = viewModel.uiState.value.editor
+        assertEquals(food.id, editor?.categoryId)
+        assertFalse(editor!!.isConfirmingDelete)
+        assertFalse(editor.isSaving)
+        assertEquals(listOf(food, transport), viewModel.uiState.value.categories)
+    }
+
+    @Test
+    fun deleteConfirmed_failure_showsMessage() = runTest {
+        categoryRepository.failure = IOException("disk")
+        val viewModel = viewModel()
+        viewModel.onIntent(CategoryManageIntent.CategoryClicked(transport))
+        viewModel.onIntent(CategoryManageIntent.EditorDeleteClicked)
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(CategoryManageIntent.DeleteConfirmed)
+
+            assertEquals(
+                CategoryManageSideEffect.ShowMessage(R.string.category_delete_failed),
+                awaitItem()
+            )
+        }
+        assertFalse(viewModel.uiState.value.editor!!.isSaving)
+    }
 
     // 추가
 

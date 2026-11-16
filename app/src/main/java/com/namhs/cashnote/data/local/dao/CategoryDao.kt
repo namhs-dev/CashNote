@@ -1,6 +1,7 @@
 package com.namhs.cashnote.data.local.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
@@ -25,4 +26,8 @@ interface CategoryDao {
     /** id가 같은 카테고리를 바꾼다. */
     @Update
     suspend fun update(category: CategoryEntity)
+
+    /** 카테고리를 지운다. 이 카테고리를 쓰는 거래가 있으면 외래 키(RESTRICT) 때문에 예외가 난다. */
+    @Delete
+    suspend fun delete(category: CategoryEntity)
 }
