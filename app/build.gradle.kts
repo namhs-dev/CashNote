@@ -41,9 +41,11 @@ android {
 
     buildTypes {
         release {
+            // R8로 앱 코드와 모든 라이브러리를 줄이고 난독화한다(packageScope 기본값 "**").
+            // Retrofit·kotlinx-serialization·Room·Hilt·WorkManager는 라이브러리가 함께 배포하는 keep 규칙으로 충분해
+            // 앱 전용 규칙은 두지 않는다 (#44: release 빌드를 실기기에서 API·DB·화면 이동까지 확인)
             optimization {
                 enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
             }
         }
     }
