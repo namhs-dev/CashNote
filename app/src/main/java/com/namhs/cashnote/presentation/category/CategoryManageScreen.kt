@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -55,6 +57,7 @@ import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.Category
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.presentation.component.CategoryColorDot
+import com.namhs.cashnote.presentation.component.DialogAdjustResize
 import com.namhs.cashnote.presentation.theme.CashNoteTheme
 import kotlinx.coroutines.launch
 
@@ -208,7 +211,13 @@ private fun CategoryEditorDialog(
         onDismissRequest = { onIntent(CategoryManageIntent.EditorDismissed) },
         title = { Text(stringResource(titleRes)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            // 키보드가 올라오면 다이얼로그 창을 키보드 위로 줄이고, 본문은 스크롤되게 둔다.
+            // 그러면 AlertDialog가 본문만 줄이고 저장·취소 버튼은 키보드 위에 남긴다 (큰 글꼴에서 버튼이 가려지던 문제)
+            DialogAdjustResize()
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 OutlinedTextField(
                     value = editor.name,
                     onValueChange = { onIntent(CategoryManageIntent.EditorNameChanged(it)) },

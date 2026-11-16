@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -152,8 +154,13 @@ fun TransactionEditScreen(
             TransactionEditForm(
                 state = state,
                 onIntent = onIntent,
+                // edge-to-edge라 키보드가 올라와도 창이 줄지 않는다. 스크롤 영역을 키보드 위까지로 줄여
+                // 메모처럼 아래쪽 칸도 포커스하면 키보드 위로 올라오게 한다.
+                // Scaffold가 이미 준 하단 시스템 바 여백은 consume해 키보드 높이와 겹쳐 더하지 않는다
                 modifier = Modifier
                     .padding(innerPadding)
+                    .consumeWindowInsets(innerPadding)
+                    .imePadding()
                     .fillMaxSize()
             )
         }
