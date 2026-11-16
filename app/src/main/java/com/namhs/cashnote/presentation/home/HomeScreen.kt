@@ -48,6 +48,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,6 +69,7 @@ import com.namhs.cashnote.domain.model.PaymentMethod
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.model.TransactionWithCategory
+import com.namhs.cashnote.presentation.component.CategoryColorDot
 import com.namhs.cashnote.presentation.component.MonthSelector
 import com.namhs.cashnote.presentation.component.formatAmount
 import com.namhs.cashnote.presentation.component.formatForeignAmount
@@ -308,11 +312,18 @@ private fun TransactionList(
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surface)
                         .padding(horizontal = 16.dp, vertical = 8.dp)
+                        // 스크린리더가 날짜 단위로 건너뛸 수 있게 제목으로 표시한다
+                        .semantics { heading() }
                 )
             }
             items(items = group.items, key = { it.transaction.id }) { item ->
-                SwipeToDeleteBox(onDelete = { onItemDelete(item.transaction.id) }) {
-                    TransactionRow(item = item, onClick = { onItemClick(item.transaction.id) })
+                val onDelete = { onItemDelete(item.transaction.id) }
+                SwipeToDeleteBox(onDelete = onDelete) {
+                    TransactionRow(
+                        item = item,
+                        onClick = { onItemClick(item.transaction.id) },
+                        onDelete = onDelete
+                    )
                 }
             }
         }
@@ -348,22 +359,35 @@ private fun SwipeToDeleteBox(onDelete: () -> Unit, content: @Composable () -> Un
 }
 
 @Composable
-private fun TransactionRow(item: TransactionWithCategory, onClick: () -> Unit) {
+private fun TransactionRow(
+    item: TransactionWithCategory,
+    onClick: () -> Unit,
+    onDelete: () -> Unit
+) {
     val transaction = item.transaction
+    val deleteLabel = stringResource(R.string.action_delete)
     Row(
         // 밀 때 뒤의 삭제 배경이 비치지 않도록 앞면에 배경을 깐다
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
+            .clickable(
+                onClickLabel = stringResource(R.string.home_edit_transaction),
+                onClick = onClick
+            )
+            // 밀어서 삭제는 스크린리더로 할 수 없으므로 "작업" 메뉴에 삭제를 둔다
+            .semantics {
+                customActions = listOf(
+                    CustomAccessibilityAction(deleteLabel) {
+                        onDelete()
+                        true
+                    }
+                )
+            }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .background(Color(item.category.color), CircleShape)
-        )
+        CategoryColorDot(color = item.category.color)
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(text = item.category.name, style = MaterialTheme.typography.bodyLarge)
@@ -473,6 +497,7 @@ private fun previewItem(
 )
 
 @Preview(name = "목록", uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Preview(name = "목록 · 글꼴 2배", fontScale = 2f)
 @Composable
 private fun HomeScreenPreview() {
     CashNoteTheme {

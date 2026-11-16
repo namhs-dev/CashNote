@@ -38,12 +38,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -51,6 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.Category
 import com.namhs.cashnote.domain.model.TransactionType
+import com.namhs.cashnote.presentation.component.CategoryColorDot
 import com.namhs.cashnote.presentation.theme.CashNoteTheme
 import kotlinx.coroutines.launch
 
@@ -182,17 +186,8 @@ private fun TypeTabs(
 private fun CategoryRow(category: Category, onClick: () -> Unit) {
     ListItem(
         headlineContent = { Text(category.name) },
-        leadingContent = { ColorDot(color = category.color, size = 12) },
+        leadingContent = { CategoryColorDot(color = category.color) },
         modifier = Modifier.clickable(onClick = onClick)
-    )
-}
-
-@Composable
-private fun ColorDot(color: Long, size: Int, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .size(size.dp)
-            .background(Color(color), CircleShape)
     )
 }
 
@@ -226,10 +221,8 @@ private fun CategoryEditorDialog(
                     text = stringResource(R.string.category_color_label),
                     style = MaterialTheme.typography.labelLarge
                 )
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                // 각 색은 48dp 터치 영역 안에 36dp 원으로 그려 원 사이 간격이 따로 필요 없다
+                FlowRow {
                     categoryColorPalette.forEach { color ->
                         ColorOption(
                             color = color,
@@ -296,14 +289,25 @@ private fun DeleteConfirmDialog(name: String, onIntent: (CategoryManageIntent) -
 private fun ColorOption(color: Long, selected: Boolean, onClick: () -> Unit) {
     // 고른 색은 바깥에 테두리를 둘러 표시한다
     val borderColor = if (selected) MaterialTheme.colorScheme.onSurface else Color.Transparent
+    val name = categoryColorNameRes(color)?.let { stringResource(it) }
+    // 터치 영역은 권장 최소 크기 48dp, 보이는 원은 36dp
     Box(
         modifier = Modifier
-            .size(36.dp)
-            .border(2.dp, borderColor, CircleShape)
-            .padding(4.dp)
-            .background(Color(color), CircleShape)
+            .size(48.dp)
             .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
-    )
+            .semantics { if (name != null) contentDescription = name },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .border(2.dp, borderColor, CircleShape)
+                .padding(4.dp)
+                .background(Color(color), CircleShape)
+                // 밝은 색도 라이트 배경에서 모양이 보이게 얇은 외곽선을 두른다
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
+        )
+    }
 }
 
 private val previewCategories = listOf(

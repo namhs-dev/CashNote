@@ -17,6 +17,8 @@
     <string name="home_empty_description">+ 버튼으로 내역을 추가해 보세요</string>
     <string name="home_deleted_message">내역을 삭제했습니다</string>
     <string name="home_delete_failed">삭제하지 못했습니다</string>
+    <!-- 스크린리더: "두 번 탭하여 내역 수정" -->
+    <string name="home_edit_transaction">내역 수정</string>
     <!-- 목록 항목의 둘째 줄. %1$s: 결제수단, %2$s: 메모 -->
     <string name="home_payment_method_with_memo">%1$s · %2$s</string>
     <string name="home_export">CSV로 내보내기</string>
@@ -69,6 +71,21 @@
     <string name="category_edit">카테고리 수정</string>
     <string name="category_name_label">이름</string>
     <string name="category_color_label">색상</string>
+    <!-- 카테고리 색상 선택지. 스크린리더가 읽는다 -->
+    <string name="color_orange">주황</string>
+    <string name="color_red">빨강</string>
+    <string name="color_pink">분홍</string>
+    <string name="color_purple">보라</string>
+    <string name="color_light_purple">연보라</string>
+    <string name="color_indigo">남색</string>
+    <string name="color_sky_blue">하늘색</string>
+    <string name="color_teal">청록</string>
+    <string name="color_green">초록</string>
+    <string name="color_light_green">연두</string>
+    <string name="color_yellow">노랑</string>
+    <string name="color_tangerine">귤색</string>
+    <string name="color_brown">갈색</string>
+    <string name="color_gray">회색</string>
     <string name="category_name_empty">이름을 입력해 주세요</string>
     <string name="category_name_duplicate">같은 이름의 카테고리가 이미 있습니다</string>
     <string name="category_save_failed">저장하지 못했습니다. 다시 시도해 주세요</string>
@@ -94,6 +111,8 @@
     <string name="transaction_category_label">카테고리</string>
     <string name="transaction_category_error">카테고리를 선택해 주세요</string>
     <string name="transaction_date_label">날짜</string>
+    <!-- 스크린리더: "두 번 탭하여 날짜 선택" -->
+    <string name="transaction_date_select">날짜 선택</string>
     <string name="transaction_memo_label">메모</string>
     <string name="transaction_payment_method_label">결제수단</string>
     <string name="payment_method_card">카드</string>

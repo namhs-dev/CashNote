@@ -50,7 +50,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -179,19 +182,22 @@ private fun TransactionEditForm(
             onSelect = { onIntent(TransactionEditIntent.PaymentMethodSelected(it)) }
         )
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            CurrencySelector(
-                selectedCode = state.currencyCode,
-                options = state.foreignCurrencyOptions,
-                exchangeRates = state.exchangeRates,
-                onSelect = { onIntent(TransactionEditIntent.CurrencySelected(it)) },
-                modifier = Modifier.width(CURRENCY_FIELD_WIDTH)
-            )
-            AmountField(
-                state = state,
-                onAmountChange = { onIntent(TransactionEditIntent.AmountChanged(it)) },
-                modifier = Modifier.weight(1f)
-            )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CurrencySelector(
+                    selectedCode = state.currencyCode,
+                    options = state.foreignCurrencyOptions,
+                    exchangeRates = state.exchangeRates,
+                    onSelect = { onIntent(TransactionEditIntent.CurrencySelected(it)) },
+                    modifier = Modifier.width(CURRENCY_FIELD_WIDTH)
+                )
+                AmountField(
+                    state = state,
+                    onAmountChange = { onIntent(TransactionEditIntent.AmountChanged(it)) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            AmountSupportingText(state = state)
         }
 
         CategorySelector(
@@ -281,13 +287,47 @@ private fun AmountField(
     modifier: Modifier = Modifier
 ) {
     val code = state.currencyCode
-    val supportingText = when {
-        state.isAmountError -> stringResource(R.string.transaction_amount_error)
+    val errorText = amountErrorText(state)
 
-        state.isRateUnavailableOffline ->
-            stringResource(R.string.transaction_rate_unavailable_offline)
+    OutlinedTextField(
+        value = state.amountInput,
+        onValueChange = onAmountChange,
+        // 안내 문구는 통화 칸까지 걸친 아래 줄(AmountSupportingText)에 두므로, 스크린리더에는 여기서 오류를 알린다
+        modifier = modifier.semantics { if (errorText != null) error(errorText) },
+        label = { Text(stringResource(R.string.transaction_amount_label)) },
+        suffix = { Text(code ?: stringResource(R.string.transaction_amount_suffix)) },
+        isError = errorText != null,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = if (code == null) KeyboardType.Number else KeyboardType.Decimal
+        ),
+        singleLine = true
+    )
+}
 
-        state.isRateUnavailable -> stringResource(R.string.transaction_rate_unavailable)
+/** 금액 칸의 오류 문구. 오류가 없으면 null */
+@Composable
+private fun amountErrorText(state: TransactionEditUiState): String? = when {
+    state.isAmountError -> stringResource(R.string.transaction_amount_error)
+
+    state.isRateUnavailableOffline ->
+        stringResource(R.string.transaction_rate_unavailable_offline)
+
+    state.isRateUnavailable -> stringResource(R.string.transaction_rate_unavailable)
+
+    else -> null
+}
+
+/**
+ * 통화·금액 줄 아래 전체 폭에 오류 또는 환산 안내를 보여 준다.
+ *
+ * 입력창의 supportingText로 두면 금액 칸 폭에 갇혀 큰 글꼴에서 한 단어씩 줄바꿈되므로 따로 둔다.
+ */
+@Composable
+private fun AmountSupportingText(state: TransactionEditUiState, modifier: Modifier = Modifier) {
+    val errorText = amountErrorText(state)
+    val code = state.currencyCode
+    val text = when {
+        errorText != null -> errorText
 
         code != null && state.appliedRate != null -> {
             val conversion = conversionText(
@@ -304,21 +344,18 @@ private fun AmountField(
             }
         }
 
-        else -> null
+        else -> return
     }
-
-    OutlinedTextField(
-        value = state.amountInput,
-        onValueChange = onAmountChange,
-        modifier = modifier,
-        label = { Text(stringResource(R.string.transaction_amount_label)) },
-        suffix = { Text(code ?: stringResource(R.string.transaction_amount_suffix)) },
-        isError = state.isAmountError || state.isRateUnavailable,
-        supportingText = supportingText?.let { text -> { Text(text) } },
-        keyboardOptions = KeyboardOptions(
-            keyboardType = if (code == null) KeyboardType.Number else KeyboardType.Decimal
-        ),
-        singleLine = true
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = if (errorText != null) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        // 입력창 안내 문구와 같은 들여쓰기
+        modifier = modifier.padding(horizontal = 16.dp)
     )
 }
 
@@ -454,20 +491,30 @@ private fun DateField(date: LocalDate, onDateSelect: (LocalDate) -> Unit) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
     val formatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG) }
 
+    val dateText = date.format(formatter)
+    val dateLabel = stringResource(R.string.transaction_date_label)
     // 읽기 전용 입력창은 클릭을 받지 않으므로 위에 투명한 클릭 영역을 덮는다
     Box {
         OutlinedTextField(
-            value = date.format(formatter),
+            value = dateText,
             onValueChange = {},
-            modifier = Modifier.fillMaxWidth(),
+            // 스크린리더에는 아래 클릭 영역 하나로만 읽히게 입력창의 의미는 지운다
+            modifier = Modifier
+                .fillMaxWidth()
+                .clearAndSetSemantics {},
             readOnly = true,
-            label = { Text(stringResource(R.string.transaction_date_label)) },
+            label = { Text(dateLabel) },
             singleLine = true
         )
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .clickable { showDialog = true }
+                .clickable(
+                    onClickLabel = stringResource(R.string.transaction_date_select),
+                    role = Role.Button
+                ) { showDialog = true }
+                // "날짜, 2026년 11월 16일, 버튼"처럼 읽힌다
+                .semantics { contentDescription = "$dateLabel, $dateText" }
         )
     }
 
@@ -538,6 +585,8 @@ private val previewUsd = ExchangeRate(
 )
 
 @Preview(name = "외화 입력", uiMode = Configuration.UI_MODE_NIGHT_NO)
+// 큰 글꼴에서 환산 안내가 전체 폭으로 펼쳐지는지 확인한다
+@Preview(name = "외화 입력 · 글꼴 2배", fontScale = 2f)
 @Composable
 private fun TransactionEditScreenForeignPreview() {
     CashNoteTheme {

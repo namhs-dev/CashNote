@@ -49,6 +49,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
@@ -284,7 +286,10 @@ private fun SectionHeader(text: String) {
         text = text,
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp)
+        modifier = Modifier
+            .padding(start = 16.dp, top = 24.dp, bottom = 8.dp)
+            // 스크린리더가 묶음 단위로 건너뛸 수 있게 제목으로 표시한다
+            .semantics { heading() }
     )
 }
 
@@ -450,6 +455,7 @@ private val previewUsd = ExchangeRate(
 )
 
 @Preview(name = "설정", uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Preview(name = "설정 · 글꼴 2배", fontScale = 2f)
 @Composable
 private fun SettingsScreenPreview() {
     CashNoteTheme {
