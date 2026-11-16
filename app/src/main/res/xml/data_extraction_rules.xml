@@ -1,19 +1,25 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Android 12(API 31) 이상의 자동 백업·기기 간 전송 규칙. 11 이하는 backup_rules.xml을 쓴다.
+
+   include로 나열한 것만 백업하고 나머지는 모두 빠진다.
+   - 포함: Room DB(거래·카테고리·예산·환율)와 앱 설정 DataStore. 개인정보처리방침 2항의 백업 항목과 같다
+   - 제외(나열하지 않음): CSV 내보내기 캐시(cache/exports), Firebase가 같은 datastore 폴더와
+     shared_prefs에 두는 설치 식별·세션 파일(복원한 기기가 다른 기기의 식별자를 쓰지 않게)
+   - WorkManager DB는 no_backup 폴더라 원래 백업되지 않는다. 예약은 앱 시작 때 설정을 읽어 다시 건다
 -->
 <data-extraction-rules>
-    <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+    <!-- 가계부 데이터라 화면 잠금이 있어 종단간 암호화할 수 있는 기기에서만 클라우드에 백업한다 -->
+    <cloud-backup disableIfNoEncryptionCapabilities="true">
+        <include domain="database" path="cashnote.db" />
+        <include domain="database" path="cashnote.db-wal" />
+        <include domain="database" path="cashnote.db-shm" />
+        <include domain="file" path="datastore/settings.preferences_pb" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <include domain="database" path="cashnote.db" />
+        <include domain="database" path="cashnote.db-wal" />
+        <include domain="database" path="cashnote.db-shm" />
+        <include domain="file" path="datastore/settings.preferences_pb" />
     </device-transfer>
-    -->
 </data-extraction-rules>

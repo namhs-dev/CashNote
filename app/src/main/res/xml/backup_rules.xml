@@ -1,13 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Android 11(API 30) 이하의 자동 백업 규칙. 12 이상은 data_extraction_rules.xml을 쓴다.
+   포함·제외 기준은 data_extraction_rules.xml과 같다.
+
+   requireFlags="clientSideEncryption": 화면 잠금이 있어 암호화할 수 있을 때만 백업한다(API 28+).
+   기기 간 전송(deviceToDeviceTransfer)은 이 조건과 상관없이 같은 파일을 옮긴다.
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <include domain="database" path="cashnote.db" requireFlags="clientSideEncryption" />
+    <include domain="database" path="cashnote.db-wal" requireFlags="clientSideEncryption" />
+    <include domain="database" path="cashnote.db-shm" requireFlags="clientSideEncryption" />
+    <include domain="file" path="datastore/settings.preferences_pb" requireFlags="clientSideEncryption" />
 </full-backup-content>
