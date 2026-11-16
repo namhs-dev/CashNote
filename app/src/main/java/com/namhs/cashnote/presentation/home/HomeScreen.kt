@@ -60,6 +60,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.BudgetStatus
 import com.namhs.cashnote.domain.model.Category
+import com.namhs.cashnote.domain.model.ForeignAmount
 import com.namhs.cashnote.domain.model.MonthlySummary
 import com.namhs.cashnote.domain.model.PaymentMethod
 import com.namhs.cashnote.domain.model.Transaction
@@ -67,8 +68,10 @@ import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.model.TransactionWithCategory
 import com.namhs.cashnote.presentation.component.MonthSelector
 import com.namhs.cashnote.presentation.component.formatAmount
+import com.namhs.cashnote.presentation.component.formatForeignAmount
 import com.namhs.cashnote.presentation.component.labelRes
 import com.namhs.cashnote.presentation.theme.CashNoteTheme
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -383,7 +386,25 @@ private fun TransactionRow(item: TransactionWithCategory, onClick: () -> Unit) {
             )
         }
         Spacer(Modifier.width(16.dp))
+        AmountColumn(transaction)
+    }
+}
+
+/** 원화 금액, 외화 거래면 그 아래에 외화 원금액("USD 12.50"). 오른쪽 정렬 */
+@Composable
+private fun AmountColumn(transaction: Transaction) {
+    Column(horizontalAlignment = Alignment.End) {
         AmountText(amount = transaction.amount, type = transaction.type)
+        transaction.foreign?.let { foreign ->
+            val foreignText = remember(foreign) {
+                formatForeignAmount(foreign.currencyCode, foreign.amount)
+            }
+            Text(
+                text = foreignText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
@@ -424,13 +445,18 @@ private fun EmptyContent(modifier: Modifier = Modifier) {
 private val previewFood = Category(1, "식비", TransactionType.EXPENSE, "food", 0xFFE57373)
 private val previewSalary = Category(2, "급여", TransactionType.INCOME, "salary", 0xFF64B5F6)
 
+// 12.50달러 × 1,450.5 = 18,131원, 1,000엔 × 9.3512 = 9,351원
+private val previewUsd = ForeignAmount("USD", BigDecimal("12.50"), BigDecimal("1450.5"))
+private val previewJpy = ForeignAmount("JPY", BigDecimal("1000"), BigDecimal("9.3512"))
+
 private fun previewItem(
     id: Long,
     amount: Long,
     category: Category,
     memo: String,
     day: Int,
-    paymentMethod: PaymentMethod = PaymentMethod.CARD
+    paymentMethod: PaymentMethod = PaymentMethod.CARD,
+    foreign: ForeignAmount? = null
 ) = TransactionWithCategory(
     transaction = Transaction(
         id = id,
@@ -440,6 +466,7 @@ private fun previewItem(
         memo = memo,
         date = LocalDate.of(2026, 11, day),
         createdAt = Instant.EPOCH,
+        foreign = foreign,
         paymentMethod = paymentMethod
     ),
     category = category
@@ -463,12 +490,17 @@ private fun HomeScreenPreview() {
                     ),
                     DailyTransactions(
                         LocalDate.of(2026, 11, 9),
-                        listOf(previewItem(3, 8_000, previewFood, "", 9, PaymentMethod.CASH))
+                        listOf(
+                            previewItem(3, 8_000, previewFood, "", 9, PaymentMethod.CASH),
+                            // 외화 거래는 원화 금액 아래에 원금액이 붙는다
+                            previewItem(4, 18_131, previewFood, "커피", 9, foreign = previewUsd),
+                            previewItem(5, 9_351, previewFood, "라멘", 9, foreign = previewJpy)
+                        )
                     )
                 ),
-                summary = MonthlySummary(income = 3_000_000, expense = 20_500),
-                // 82% 사용: 주의 단계
-                budget = BudgetStatus(budget = 25_000, spent = 20_500)
+                summary = MonthlySummary(income = 3_000_000, expense = 47_982),
+                // 192% 사용: 초과 단계
+                budget = BudgetStatus(budget = 25_000, spent = 47_982)
             ),
             onIntent = {}
         )
