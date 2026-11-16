@@ -22,5 +22,10 @@ data class Transaction(
     /** 생성 시각 */
     val createdAt: Instant,
     /** 외화 거래의 원금액과 적용 환율. 원화 거래면 null */
-    val foreign: ForeignAmount? = null
+    val foreign: ForeignAmount? = null,
+    /**
+     * 결제수단. 기본값은 결제수단을 기록하기 전에 저장한 거래와 같은 [PaymentMethod.OTHER]다.
+     * 새 거래 입력 화면은 카드로 시작한다
+     */
+    val paymentMethod: PaymentMethod = PaymentMethod.OTHER
 )
