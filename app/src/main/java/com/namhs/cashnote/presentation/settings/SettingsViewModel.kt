@@ -1,6 +1,7 @@
 package com.namhs.cashnote.presentation.settings
 
 import androidx.lifecycle.viewModelScope
+import com.namhs.cashnote.BuildConfig
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.usecase.GetDefaultCurrencyUseCase
 import com.namhs.cashnote.domain.usecase.GetExchangeRatesUseCase
@@ -21,7 +22,10 @@ class SettingsViewModel @Inject constructor(
     private val getNotificationSettings: GetNotificationSettingsUseCase,
     private val setReminder: SetReminderUseCase,
     private val setBudgetAlertEnabled: SetBudgetAlertEnabledUseCase
-) : MviViewModel<SettingsUiState, SettingsIntent, SettingsSideEffect>(SettingsUiState()) {
+) : MviViewModel<SettingsUiState, SettingsIntent, SettingsSideEffect>(
+    // 앱 버전은 실행 중에 바뀌지 않으므로 구독하지 않고 처음에 한 번 넣는다
+    SettingsUiState(appVersion = BuildConfig.VERSION_NAME)
+) {
 
     // 설정 앱으로 보낸 뒤 허용하고 돌아오면 켜 줄 알림. 다이얼로그를 닫으면 잊는다
     private var pendingTarget: NotificationTarget? = null
