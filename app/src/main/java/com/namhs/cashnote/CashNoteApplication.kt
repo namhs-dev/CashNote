@@ -3,6 +3,7 @@ package com.namhs.cashnote
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.namhs.cashnote.data.notification.NotificationChannels
 import com.namhs.cashnote.data.worker.ExchangeRateSyncScheduler
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -21,6 +22,7 @@ class CashNoteApplication :
     override fun onCreate() {
         // super.onCreate()에서 Hilt가 필드를 주입하므로 그 뒤에 예약한다
         super.onCreate()
+        NotificationChannels.create(this)
         exchangeRateSyncScheduler.schedule()
     }
 
