@@ -35,6 +35,13 @@
     <string name="settings_default_currency_description">새 내역을 입력할 때 처음 선택되는 통화</string>
     <string name="settings_category_manage_description">지출·수입 카테고리 추가, 수정, 삭제</string>
     <string name="category_manage_title">카테고리 관리</string>
+    <string name="category_add">카테고리 추가</string>
+    <string name="category_edit">카테고리 수정</string>
+    <string name="category_name_label">이름</string>
+    <string name="category_color_label">색상</string>
+    <string name="category_name_empty">이름을 입력해 주세요</string>
+    <string name="category_name_duplicate">같은 이름의 카테고리가 이미 있습니다</string>
+    <string name="category_save_failed">저장하지 못했습니다. 다시 시도해 주세요</string>
     <string name="statistics_chart_description">카테고리별 지출 차트</string>
     <string name="statistics_total_expense">총 지출</string>
     <string name="statistics_empty">이 달의 지출이 없습니다</string>
