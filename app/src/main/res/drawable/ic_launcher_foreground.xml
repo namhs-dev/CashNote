@@ -1,30 +1,37 @@
+<!--
+  앱 아이콘 전경: 모서리가 접힌 메모장과 원화 기호.
+  원본은 docs/icon/cashnote-icon.svg(같은 108x108 좌표). 경로를 바꾸면 원본과 ic_launcher_monochrome.xml도 같이 바꾼다.
+  시스템 마스크에 잘리지 않도록 가운데 지름 66 안전 영역 안(x 35~73, y 31~77)에 둔다.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
-                android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
+    <!-- 메모장 -->
     <path
         android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
-        android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+        android:pathData="M39,31 L63,31 L73,41 L73,73 A4,4 0 0 1 69,77 L39,77 A4,4 0 0 1 35,73 L35,35 A4,4 0 0 1 39,31 Z" />
+    <!-- 접힌 모서리 -->
+    <path
+        android:fillColor="#A6F2DC"
+        android:pathData="M63,31 L63,37 A4,4 0 0 0 67,41 L73,41 Z" />
+    <!-- 원화 기호: W와 가로줄 두 개 -->
+    <path
+        android:pathData="M42,44 L46.5,58 L54,46 L61.5,58 L66,44"
+        android:strokeWidth="3"
+        android:strokeColor="#1B6B5A"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M41,49.5 L67,49.5 M41,53.5 L67,53.5"
+        android:strokeWidth="3"
+        android:strokeColor="#1B6B5A"
+        android:strokeLineCap="round" />
+    <!-- 장부 줄 -->
+    <path
+        android:pathData="M42,65 L66,65 M42,70 L58,70"
+        android:strokeWidth="3"
+        android:strokeColor="#A6F2DC"
+        android:strokeLineCap="round" />
 </vector>
