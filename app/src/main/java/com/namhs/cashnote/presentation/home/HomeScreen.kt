@@ -497,6 +497,7 @@ private fun previewItem(
 )
 
 @Preview(name = "목록", uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Preview(name = "목록 · 글꼴 2배", fontScale = 2f)
 @Composable
 private fun HomeScreenPreview() {
     CashNoteTheme {

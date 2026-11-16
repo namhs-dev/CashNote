@@ -455,6 +455,7 @@ private val previewUsd = ExchangeRate(
 )
 
 @Preview(name = "설정", uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Preview(name = "설정 · 글꼴 2배", fontScale = 2f)
 @Composable
 private fun SettingsScreenPreview() {
     CashNoteTheme {
