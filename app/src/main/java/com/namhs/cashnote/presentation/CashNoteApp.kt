@@ -2,15 +2,9 @@ package com.namhs.cashnote.presentation
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -23,6 +17,7 @@ import com.namhs.cashnote.presentation.category.CategoryManageRoute
 import com.namhs.cashnote.presentation.home.HomeRoute
 import com.namhs.cashnote.presentation.licenses.OssLicensesRoute
 import com.namhs.cashnote.presentation.navigation.CashNoteDestination
+import com.namhs.cashnote.presentation.navigation.CashNoteNavigationBar
 import com.namhs.cashnote.presentation.navigation.TopLevelDestination
 import com.namhs.cashnote.presentation.settings.SettingsRoute
 import com.namhs.cashnote.presentation.statistics.StatisticsRoute
@@ -41,21 +36,10 @@ fun CashNoteApp(modifier: Modifier = Modifier) {
         modifier = modifier,
         bottomBar = {
             if (currentTab != null) {
-                NavigationBar {
-                    TopLevelDestination.entries.forEach { tab ->
-                        NavigationBarItem(
-                            selected = tab == currentTab,
-                            onClick = { navController.navigateToTab(tab) },
-                            icon = {
-                                Icon(
-                                    painter = painterResource(tab.iconRes),
-                                    contentDescription = null
-                                )
-                            },
-                            label = { Text(stringResource(tab.labelRes)) }
-                        )
-                    }
-                }
+                CashNoteNavigationBar(
+                    currentTab = currentTab,
+                    onTabClick = { tab -> navController.navigateToTab(tab) }
+                )
             }
         },
         // 시스템 바 여백은 각 화면이 직접 처리한다
