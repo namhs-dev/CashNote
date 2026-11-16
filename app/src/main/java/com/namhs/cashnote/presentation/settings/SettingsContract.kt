@@ -45,6 +45,12 @@ sealed interface SettingsIntent {
 
     data object OssLicensesClicked : SettingsIntent
 
+    /** 앱 정보의 "문의하기" */
+    data object ContactClicked : SettingsIntent
+
+    /** 메일 앱이 없어 문의 메일을 열지 못했다고 Route가 알려 준다 */
+    data object ContactEmailUnavailable : SettingsIntent
+
     /** 기록 리마인더 켜기/끄기 */
     data class ReminderToggled(val enabled: Boolean) : SettingsIntent
 
@@ -80,6 +86,12 @@ sealed interface SettingsSideEffect {
     data object NavigateToCategoryManage : SettingsSideEffect
 
     data object NavigateToOssLicenses : SettingsSideEffect
+
+    /** 받는 주소·제목·앱과 기기 정보를 채운 문의 메일 작성 화면을 연다 */
+    data object OpenContactEmail : SettingsSideEffect
+
+    /** 메일 앱이 없다. 문의 주소를 알려 주고 복사할 수 있게 한다 */
+    data object ShowContactEmailUnavailable : SettingsSideEffect
 
     /** 알림을 켜려면 권한이 필요하다. Route가 권한 창을 띄우고 결과를 돌려준다 */
     data class RequestNotificationPermission(val target: NotificationTarget) :

@@ -36,6 +36,7 @@
     <string name="home_budget_dialog_applies_from">%1$d년 %2$d월부터 적용</string>
     <string name="home_budget_dialog_hint">비워 두면 이 달부터 예산을 없애요</string>
     <string name="action_undo">실행 취소</string>
+    <string name="action_copy">복사</string>
     <string name="action_delete">삭제</string>
     <string name="statistics_title">통계</string>
     <string name="settings_title">설정</string>
@@ -55,6 +56,15 @@
     <string name="settings_section_notification">알림</string>
     <string name="settings_section_app_info">앱 정보</string>
     <string name="settings_app_version">앱 버전</string>
+    <string name="settings_contact">문의하기</string>
+    <!-- 문의 메일 받는 주소. 언어와 상관없이 같으므로 번역하지 않는다 -->
+    <string name="support_email" translatable="false">namhs.dev+cashnote@gmail.com</string>
+    <string name="contact_email_subject">[CashNote] 문의</string>
+    <!-- 문의 메일 본문. 위 빈 줄에 사용자가 쓴다.
+         %1$s: 앱 버전 이름, %2$d: 버전 코드, %3$s: 제조사·모델, %4$s: Android 버전, %5$d: API 레벨 -->
+    <string name="contact_email_body">\n\n---\n앱 버전: %1$s (%2$d)\n기기: %3$s\nAndroid: %4$s (API %5$d)</string>
+    <!-- %1$s: 문의 메일 주소 -->
+    <string name="contact_email_unavailable">메일 앱을 찾을 수 없습니다. %1$s로 보내 주세요</string>
     <string name="oss_licenses_title">오픈소스 라이선스</string>
     <string name="settings_reminder">기록 리마인더</string>
     <string name="settings_reminder_description">오늘 기록한 내역이 없으면 정한 시간에 알려 줍니다</string>

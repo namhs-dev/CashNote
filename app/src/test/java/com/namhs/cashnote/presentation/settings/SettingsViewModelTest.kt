@@ -107,6 +107,28 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun contactClicked_opensContactEmail() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(SettingsIntent.ContactClicked)
+
+            assertEquals(SettingsSideEffect.OpenContactEmail, awaitItem())
+        }
+    }
+
+    @Test
+    fun contactEmailUnavailable_showsAddress() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(SettingsIntent.ContactEmailUnavailable)
+
+            assertEquals(SettingsSideEffect.ShowContactEmailUnavailable, awaitItem())
+        }
+    }
+
+    @Test
     fun ossLicensesClicked_navigatesToOssLicenses() = runTest {
         val viewModel = viewModel()
 

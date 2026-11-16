@@ -56,6 +56,11 @@ class SettingsViewModel @Inject constructor(
             SettingsIntent.OssLicensesClicked ->
                 postSideEffect(SettingsSideEffect.NavigateToOssLicenses)
 
+            SettingsIntent.ContactClicked -> postSideEffect(SettingsSideEffect.OpenContactEmail)
+
+            SettingsIntent.ContactEmailUnavailable ->
+                postSideEffect(SettingsSideEffect.ShowContactEmailUnavailable)
+
             // 알림 설정도 저장하면 구독 중인 설정이 바뀌어 State에 반영된다
             is SettingsIntent.ReminderToggled ->
                 toggle(NotificationTarget.REMINDER, intent.enabled)
