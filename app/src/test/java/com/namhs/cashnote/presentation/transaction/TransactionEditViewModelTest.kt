@@ -3,12 +3,16 @@ package com.namhs.cashnote.presentation.transaction
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
 import com.namhs.cashnote.R
+import com.namhs.cashnote.domain.model.BudgetLevel
 import com.namhs.cashnote.domain.model.Category
 import com.namhs.cashnote.domain.model.ExchangeRate
 import com.namhs.cashnote.domain.model.ForeignAmount
+import com.namhs.cashnote.domain.model.NotificationSettings
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.usecase.AddTransactionUseCase
+import com.namhs.cashnote.domain.usecase.CheckBudgetAlertUseCase
+import com.namhs.cashnote.domain.usecase.GetBudgetStatusUseCase
 import com.namhs.cashnote.domain.usecase.GetCategoriesUseCase
 import com.namhs.cashnote.domain.usecase.GetDefaultCurrencyUseCase
 import com.namhs.cashnote.domain.usecase.GetExchangeRatesUseCase
@@ -16,9 +20,11 @@ import com.namhs.cashnote.domain.usecase.GetTransactionUseCase
 import com.namhs.cashnote.domain.usecase.ObserveNetworkStatusUseCase
 import com.namhs.cashnote.domain.usecase.RefreshExchangeRatesUseCase
 import com.namhs.cashnote.domain.usecase.UpdateTransactionUseCase
+import com.namhs.cashnote.testing.FakeBudgetRepository
 import com.namhs.cashnote.testing.FakeCategoryRepository
 import com.namhs.cashnote.testing.FakeExchangeRateRepository
 import com.namhs.cashnote.testing.FakeNetworkMonitor
+import com.namhs.cashnote.testing.FakeNotifier
 import com.namhs.cashnote.testing.FakeSettingsRepository
 import com.namhs.cashnote.testing.FakeTransactionRepository
 import com.namhs.cashnote.testing.MainDispatcherRule
@@ -26,6 +32,8 @@ import java.io.IOException
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -70,6 +78,8 @@ class TransactionEditViewModelTest {
     private val exchangeRateRepository = FakeExchangeRateRepository()
     private val networkMonitor = FakeNetworkMonitor()
     private val settingsRepository = FakeSettingsRepository()
+    private val budgetRepository = FakeBudgetRepository()
+    private val notifier = FakeNotifier()
 
     // 초기 상태
 
@@ -589,6 +599,78 @@ class TransactionEditViewModelTest {
         getExchangeRates = GetExchangeRatesUseCase(exchangeRateRepository),
         refreshExchangeRates = RefreshExchangeRatesUseCase(exchangeRateRepository),
         observeNetworkStatus = ObserveNetworkStatusUseCase(networkMonitor),
-        getDefaultCurrency = GetDefaultCurrencyUseCase(settingsRepository)
+        getDefaultCurrency = GetDefaultCurrencyUseCase(settingsRepository),
+        checkBudgetAlert = CheckBudgetAlertUseCase(
+            settingsRepository,
+            GetBudgetStatusUseCase(budgetRepository, transactionRepository),
+            notifier
+        )
     )
+
+    // 예산 알림
+
+    // 2026년 11월에는 기존 거래 두 건(12,500원 + 30,000원 = 42,500원)이 있다
+    private val november20 = LocalDate.of(2026, 11, 20)
+
+    private fun enableBudgetAlert(budget: Long) {
+        settingsRepository.notificationSettings.value =
+            NotificationSettings(budgetAlertEnabled = true)
+        runBlocking { budgetRepository.setBudget(YearMonth.of(2026, 11), budget) }
+    }
+
+    @Test
+    fun saveClicked_crossesBudget_sendsAlertForTransactionMonth() = runTest {
+        enableBudgetAlert(50_000)
+        val viewModel = viewModel()
+        viewModel.onIntent(TransactionEditIntent.AmountChanged("10000"))
+        viewModel.onIntent(TransactionEditIntent.CategorySelected(food.id))
+        viewModel.onIntent(TransactionEditIntent.DateSelected(november20))
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(TransactionEditIntent.SaveClicked)
+
+            assertEquals(TransactionEditSideEffect.NavigateBack, awaitItem())
+        }
+        // 42,500 + 10,000 = 52,500원으로 예산 50,000원을 넘었다
+        assertEquals(
+            listOf(Triple(BudgetLevel.EXCEEDED, 50_000L, 52_500L)),
+            notifier.budgetAlerts
+        )
+    }
+
+    @Test
+    fun saveClicked_budgetAlertOff_sendsNothing() = runTest {
+        runBlocking { budgetRepository.setBudget(YearMonth.of(2026, 11), 50_000) }
+        val viewModel = viewModel()
+        viewModel.onIntent(TransactionEditIntent.AmountChanged("10000"))
+        viewModel.onIntent(TransactionEditIntent.CategorySelected(food.id))
+        viewModel.onIntent(TransactionEditIntent.DateSelected(november20))
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(TransactionEditIntent.SaveClicked)
+
+            assertEquals(TransactionEditSideEffect.NavigateBack, awaitItem())
+        }
+        assertTrue(notifier.budgetAlerts.isEmpty())
+    }
+
+    @Test
+    fun saveClicked_saveFails_doesNotCheckBudget() = runTest {
+        enableBudgetAlert(10_000)
+        transactionRepository.failure = IOException("disk")
+        val viewModel = viewModel()
+        viewModel.onIntent(TransactionEditIntent.AmountChanged("10000"))
+        viewModel.onIntent(TransactionEditIntent.CategorySelected(food.id))
+        viewModel.onIntent(TransactionEditIntent.DateSelected(november20))
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(TransactionEditIntent.SaveClicked)
+
+            assertEquals(
+                TransactionEditSideEffect.ShowMessage(R.string.transaction_save_failed),
+                awaitItem()
+            )
+        }
+        assertTrue(notifier.budgetAlerts.isEmpty())
+    }
 }
