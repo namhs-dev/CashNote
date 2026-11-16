@@ -96,6 +96,9 @@ class TransactionEditViewModel @Inject constructor(
 
             is TransactionEditIntent.MemoChanged -> setState { copy(memo = intent.memo) }
 
+            is TransactionEditIntent.PaymentMethodSelected ->
+                setState { copy(paymentMethod = intent.paymentMethod) }
+
             TransactionEditIntent.SaveClicked -> save()
 
             TransactionEditIntent.BackClicked ->
@@ -191,7 +194,8 @@ class TransactionEditViewModel @Inject constructor(
                     type = transaction.type,
                     selectedCategoryId = transaction.categoryId,
                     date = transaction.date,
-                    memo = transaction.memo
+                    memo = transaction.memo,
+                    paymentMethod = transaction.paymentMethod
                 ).withResolvedRate()
             }
         }
@@ -239,7 +243,8 @@ class TransactionEditViewModel @Inject constructor(
                             memo = state.memo,
                             date = state.date,
                             createdAt = Instant.now(),
-                            foreign = foreign
+                            foreign = foreign,
+                            paymentMethod = state.paymentMethod
                         )
                     )
                 } else {
@@ -250,7 +255,8 @@ class TransactionEditViewModel @Inject constructor(
                             categoryId = categoryId,
                             memo = state.memo,
                             date = state.date,
-                            foreign = foreign
+                            foreign = foreign,
+                            paymentMethod = state.paymentMethod
                         )
                     )
                 }

@@ -8,6 +8,7 @@ import com.namhs.cashnote.domain.model.Category
 import com.namhs.cashnote.domain.model.ExchangeRate
 import com.namhs.cashnote.domain.model.ForeignAmount
 import com.namhs.cashnote.domain.model.NotificationSettings
+import com.namhs.cashnote.domain.model.PaymentMethod
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.usecase.AddTransactionUseCase
@@ -451,6 +452,60 @@ class TransactionEditViewModelTest {
     @Test
     fun sanitizeAmount_krw_dropsFraction() {
         assertEquals("12", TransactionEditViewModel.sanitizeAmount("12.5", isForeign = false))
+    }
+
+    // 결제수단
+
+    @Test
+    fun init_newTransaction_startsWithCard() {
+        assertEquals(PaymentMethod.CARD, viewModel().uiState.value.paymentMethod)
+    }
+
+    @Test
+    fun init_editMode_loadsTransactionPaymentMethod() {
+        val paidInCash = existing.copy(id = 9, paymentMethod = PaymentMethod.CASH)
+        runBlocking { transactionRepository.add(paidInCash) }
+
+        val state = viewModel(transactionId = paidInCash.id).uiState.value
+
+        assertEquals(PaymentMethod.CASH, state.paymentMethod)
+    }
+
+    @Test
+    fun init_editMode_oldTransactionLoadsAsOther() {
+        // 결제수단을 기록하기 전에 저장한 거래(migration 기본값)는 기타로 연다
+        assertEquals(
+            PaymentMethod.OTHER,
+            viewModel(transactionId = existing.id).uiState.value.paymentMethod
+        )
+    }
+
+    @Test
+    fun saveClicked_newTransaction_savesSelectedPaymentMethod() = runTest {
+        val viewModel = viewModel()
+        viewModel.onIntent(TransactionEditIntent.AmountChanged("5000"))
+        viewModel.onIntent(TransactionEditIntent.CategorySelected(food.id))
+        viewModel.onIntent(TransactionEditIntent.PaymentMethodSelected(PaymentMethod.OTHER))
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(TransactionEditIntent.SaveClicked)
+
+            assertEquals(TransactionEditSideEffect.NavigateBack, awaitItem())
+        }
+        assertEquals(PaymentMethod.OTHER, transactionRepository.added.single().paymentMethod)
+    }
+
+    @Test
+    fun saveClicked_editMode_updatesPaymentMethod() = runTest {
+        val viewModel = viewModel(transactionId = existing.id)
+        viewModel.onIntent(TransactionEditIntent.PaymentMethodSelected(PaymentMethod.CASH))
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(TransactionEditIntent.SaveClicked)
+
+            assertEquals(TransactionEditSideEffect.NavigateBack, awaitItem())
+        }
+        assertEquals(PaymentMethod.CASH, transactionRepository.updated.single().paymentMethod)
     }
 
     // 기본 통화

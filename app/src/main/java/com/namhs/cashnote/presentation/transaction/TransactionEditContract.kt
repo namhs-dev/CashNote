@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import com.namhs.cashnote.domain.model.Category
 import com.namhs.cashnote.domain.model.ExchangeRate
 import com.namhs.cashnote.domain.model.ForeignAmount
+import com.namhs.cashnote.domain.model.PaymentMethod
 import com.namhs.cashnote.domain.model.TransactionType
 import java.math.BigDecimal
 import java.time.Instant
@@ -36,6 +37,8 @@ data class TransactionEditUiState(
     /** 거래일. 초기값은 ViewModel이 오늘 날짜로 정한다 */
     val date: LocalDate,
     val memo: String = "",
+    /** 결제수단. 새 거래는 가장 흔한 카드로 시작하고, 수정할 때는 거래의 값을 쓴다 */
+    val paymentMethod: PaymentMethod = PaymentMethod.CARD,
     /** 저장 시 금액이 비었거나 0 이하였다 */
     val isAmountError: Boolean = false,
     /** 저장 시 카테고리를 고르지 않았다 */
@@ -86,6 +89,8 @@ sealed interface TransactionEditIntent {
     data class DateSelected(val date: LocalDate) : TransactionEditIntent
 
     data class MemoChanged(val memo: String) : TransactionEditIntent
+
+    data class PaymentMethodSelected(val paymentMethod: PaymentMethod) : TransactionEditIntent
 
     data object SaveClicked : TransactionEditIntent
 
