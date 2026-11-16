@@ -97,6 +97,17 @@ class SettingsViewModelTest {
         }
     }
 
+    @Test
+    fun ossLicensesClicked_navigatesToOssLicenses() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(SettingsIntent.OssLicensesClicked)
+
+            assertEquals(SettingsSideEffect.NavigateToOssLicenses, awaitItem())
+        }
+    }
+
     // 알림
 
     @Test

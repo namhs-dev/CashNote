@@ -73,6 +73,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsRoute(
     onNavigateToCategoryManage: () -> Unit,
+    onNavigateToOssLicenses: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -107,6 +108,8 @@ fun SettingsRoute(
         viewModel.sideEffect.collect { effect ->
             when (effect) {
                 SettingsSideEffect.NavigateToCategoryManage -> onNavigateToCategoryManage()
+
+                SettingsSideEffect.NavigateToOssLicenses -> onNavigateToOssLicenses()
 
                 is SettingsSideEffect.RequestNotificationPermission -> when {
                     // 그새 허용됐으면 바로 켠다
@@ -215,6 +218,11 @@ fun SettingsScreen(
                 onIntent = onIntent,
                 onTimeClick = { showTimeDialog = true }
             )
+            SectionHeader(stringResource(R.string.settings_section_app_info))
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.oss_licenses_title)) },
+                modifier = Modifier.clickable { onIntent(SettingsIntent.OssLicensesClicked) }
+            )
         }
     }
 
@@ -263,6 +271,17 @@ fun SettingsScreen(
     }
 }
 
+/** 설정 묶음 제목 */
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp)
+    )
+}
+
 /** 기록 리마인더·알림 시간·예산 알림. 행 전체를 눌러도 스위치가 바뀐다 */
 @Composable
 private fun NotificationSection(
@@ -271,12 +290,7 @@ private fun NotificationSection(
     onIntent: (SettingsIntent) -> Unit,
     onTimeClick: () -> Unit
 ) {
-    Text(
-        text = stringResource(R.string.settings_section_notification),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp)
-    )
+    SectionHeader(stringResource(R.string.settings_section_notification))
     // 켜 두었는데 시스템에서 막혀 있으면 눌러서 설정 앱으로 갈 수 있게 알린다
     if (isBlocked) {
         Text(
