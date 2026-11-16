@@ -8,6 +8,7 @@ import com.namhs.cashnote.domain.model.ForeignAmount
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.usecase.AddTransactionUseCase
 import com.namhs.cashnote.domain.usecase.GetCategoriesUseCase
+import com.namhs.cashnote.domain.usecase.GetDefaultCurrencyUseCase
 import com.namhs.cashnote.domain.usecase.GetExchangeRatesUseCase
 import com.namhs.cashnote.domain.usecase.GetTransactionUseCase
 import com.namhs.cashnote.domain.usecase.ObserveNetworkStatusUseCase
@@ -21,6 +22,7 @@ import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -34,7 +36,8 @@ class TransactionEditViewModel @Inject constructor(
     private val updateTransaction: UpdateTransactionUseCase,
     private val getExchangeRates: GetExchangeRatesUseCase,
     private val refreshExchangeRates: RefreshExchangeRatesUseCase,
-    private val observeNetworkStatus: ObserveNetworkStatusUseCase
+    private val observeNetworkStatus: ObserveNetworkStatusUseCase,
+    private val getDefaultCurrency: GetDefaultCurrencyUseCase
 ) : MviViewModel<TransactionEditUiState, TransactionEditIntent, TransactionEditSideEffect>(
     TransactionEditUiState(date = LocalDate.now())
 ) {
@@ -44,11 +47,14 @@ class TransactionEditViewModel @Inject constructor(
     // 수정 모드에서 불러온 원본. 저장 시 id와 createdAt, 같은 통화의 적용 환율을 유지하는 데 쓴다
     private var original: Transaction? = null
 
+    // 사용자가 통화를 직접 골랐으면 늦게 읽힌 기본 통화로 덮어쓰지 않는다
+    private var isCurrencySelectedByUser = false
+
     init {
         observeCategories()
         observeExchangeRates()
         observeNetwork()
-        if (transactionId != 0L) loadTransaction(transactionId)
+        if (transactionId != 0L) loadTransaction(transactionId) else applyDefaultCurrency()
     }
 
     override fun onIntent(intent: TransactionEditIntent) {
@@ -60,6 +66,7 @@ class TransactionEditViewModel @Inject constructor(
             }
 
             is TransactionEditIntent.CurrencySelected -> {
+                isCurrencySelectedByUser = true
                 if (intent.currencyCode == currentState.currencyCode) return
                 setState {
                     copy(
@@ -115,6 +122,15 @@ class TransactionEditViewModel @Inject constructor(
                     launch { refreshExchangeRatesQuietly() }
                 }
             }
+        }
+    }
+
+    // 새 거래는 설정의 기본 통화로 시작한다. 이후 설정이 바뀌어도 입력 중인 통화는 바꾸지 않도록 한 번만 읽는다
+    private fun applyDefaultCurrency() {
+        viewModelScope.launch {
+            val code = getDefaultCurrency().first() ?: return@launch
+            if (isCurrencySelectedByUser) return@launch
+            setState { copy(currencyCode = code).withResolvedRate() }
         }
     }
 

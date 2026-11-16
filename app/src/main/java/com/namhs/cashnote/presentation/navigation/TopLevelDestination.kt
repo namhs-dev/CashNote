@@ -11,5 +11,6 @@ enum class TopLevelDestination(
     @StringRes val labelRes: Int
 ) {
     HOME(CashNoteDestination.Home, R.drawable.ic_home, R.string.home_title),
-    STATISTICS(CashNoteDestination.Statistics, R.drawable.ic_bar_chart, R.string.statistics_title)
+    STATISTICS(CashNoteDestination.Statistics, R.drawable.ic_bar_chart, R.string.statistics_title),
+    SETTINGS(CashNoteDestination.Settings, R.drawable.ic_settings, R.string.settings_title)
 }

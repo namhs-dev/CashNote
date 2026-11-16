@@ -29,4 +29,7 @@ interface TransactionRepository {
     suspend fun update(transaction: Transaction)
 
     suspend fun delete(transaction: Transaction)
+
+    /** 카테고리를 쓰는 거래 수 */
+    suspend fun countByCategory(categoryId: Long): Int
 }

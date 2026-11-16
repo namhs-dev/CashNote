@@ -19,9 +19,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.namhs.cashnote.presentation.category.CategoryManageRoute
 import com.namhs.cashnote.presentation.home.HomeRoute
 import com.namhs.cashnote.presentation.navigation.CashNoteDestination
 import com.namhs.cashnote.presentation.navigation.TopLevelDestination
+import com.namhs.cashnote.presentation.settings.SettingsRoute
 import com.namhs.cashnote.presentation.statistics.StatisticsRoute
 import com.namhs.cashnote.presentation.transaction.TransactionEditRoute
 
@@ -71,6 +73,16 @@ fun CashNoteApp(modifier: Modifier = Modifier) {
                 )
             }
             composable<CashNoteDestination.Statistics> { StatisticsRoute() }
+            composable<CashNoteDestination.Settings> {
+                SettingsRoute(
+                    onNavigateToCategoryManage = {
+                        navController.navigate(CashNoteDestination.CategoryManage)
+                    }
+                )
+            }
+            composable<CashNoteDestination.CategoryManage> {
+                CategoryManageRoute(onBack = { navController.navigateUp() })
+            }
             composable<CashNoteDestination.TransactionEdit> {
                 TransactionEditRoute(onBack = { navController.navigateUp() })
             }

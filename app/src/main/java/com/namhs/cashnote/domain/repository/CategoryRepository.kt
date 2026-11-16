@@ -10,4 +10,13 @@ interface CategoryRepository {
 
     /** 거래 유형(수입/지출)에 해당하는 카테고리를 구독한다. */
     fun observeCategories(type: TransactionType): Flow<List<Category>>
+
+    /** 카테고리를 추가하고 저장된 id를 반환한다. [Category.id]는 무시한다. */
+    suspend fun add(category: Category): Long
+
+    /** id가 같은 카테고리의 이름·색상 등을 바꾼다. */
+    suspend fun update(category: Category)
+
+    /** 카테고리를 지운다. 이 카테고리를 쓰는 거래가 있으면 예외를 던진다. */
+    suspend fun delete(category: Category)
 }

@@ -82,4 +82,7 @@ class FakeTransactionRepository(initial: List<Transaction> = emptyList()) : Tran
         deleted += transaction
         transactions.update { list -> list.filterNot { it.id == transaction.id } }
     }
+
+    override suspend fun countByCategory(categoryId: Long): Int =
+        transactions.value.count { it.categoryId == categoryId }
 }

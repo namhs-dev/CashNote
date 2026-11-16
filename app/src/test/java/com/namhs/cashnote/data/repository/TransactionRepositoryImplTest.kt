@@ -235,4 +235,7 @@ private class FakeTransactionDao : TransactionDao {
     override suspend fun delete(transaction: TransactionEntity) {
         deleted += transaction
     }
+
+    override suspend fun countByCategory(categoryId: Long): Int =
+        entities.count { it.categoryId == categoryId }
 }
