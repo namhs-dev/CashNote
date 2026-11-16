@@ -220,6 +220,12 @@ fun SettingsScreen(
             )
             SectionHeader(stringResource(R.string.settings_section_app_info))
             ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_app_version)) },
+                trailingContent = {
+                    Text(text = state.appVersion, style = MaterialTheme.typography.bodyLarge)
+                }
+            )
+            ListItem(
                 headlineContent = { Text(stringResource(R.string.oss_licenses_title)) },
                 modifier = Modifier.clickable { onIntent(SettingsIntent.OssLicensesClicked) }
             )
@@ -454,7 +460,8 @@ private fun SettingsScreenPreview() {
                 notification = NotificationSettings(
                     reminderEnabled = true,
                     reminderTime = LocalTime.of(21, 30)
-                )
+                ),
+                appVersion = "1.0"
             ),
             onIntent = {}
         )

@@ -1,6 +1,7 @@
 package com.namhs.cashnote.presentation.settings
 
 import app.cash.turbine.test
+import com.namhs.cashnote.BuildConfig
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.ExchangeRate
 import com.namhs.cashnote.domain.model.NotificationSettings
@@ -95,6 +96,14 @@ class SettingsViewModelTest {
 
             assertEquals(SettingsSideEffect.NavigateToCategoryManage, awaitItem())
         }
+    }
+
+    @Test
+    fun init_appVersionIsBuildVersionName() {
+        val version = viewModel().uiState.value.appVersion
+
+        assertEquals(BuildConfig.VERSION_NAME, version)
+        assertTrue(version.isNotBlank())
     }
 
     @Test

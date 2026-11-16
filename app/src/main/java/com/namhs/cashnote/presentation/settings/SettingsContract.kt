@@ -19,7 +19,9 @@ data class SettingsUiState(
      */
     val canPostNotifications: Boolean = true,
     /** 시스템 권한 창을 더 띄울 수 없어 설정 앱으로 안내하는 다이얼로그 */
-    val isPermissionSettingsDialogVisible: Boolean = false
+    val isPermissionSettingsDialogVisible: Boolean = false,
+    /** 앱 버전 이름(BuildConfig.VERSION_NAME). 앱 정보 묶음에 보여 준다 */
+    val appVersion: String = ""
 ) {
     /** 기본 통화로 고를 수 있는 외화. 저장된 환율 통화에, 목록에 없는 현재 기본 통화를 더한다 */
     val foreignCurrencyOptions: List<String>
