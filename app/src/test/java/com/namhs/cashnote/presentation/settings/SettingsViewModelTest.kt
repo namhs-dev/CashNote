@@ -1,6 +1,7 @@
 package com.namhs.cashnote.presentation.settings
 
 import app.cash.turbine.test
+import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.ExchangeRate
 import com.namhs.cashnote.domain.model.NotificationSettings
 import com.namhs.cashnote.domain.usecase.GetDefaultCurrencyUseCase
@@ -158,6 +159,154 @@ class SettingsViewModelTest {
         assertTrue(viewModel.uiState.value.notification.budgetAlertEnabled)
         assertFalse(viewModel.uiState.value.notification.reminderEnabled)
         assertTrue(reminderScheduler.calls.isEmpty())
+    }
+
+    // 알림 권한
+
+    /** 알림을 표시할 수 없는 상태(권한 없음)로 시작한다 */
+    private fun blockedViewModel() = viewModel().apply {
+        onIntent(SettingsIntent.NotificationPermissionChecked(canPost = false))
+    }
+
+    @Test
+    fun toggleOn_withoutPermission_requestsPermissionWithoutSaving() = runTest {
+        val viewModel = blockedViewModel()
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(SettingsIntent.ReminderToggled(true))
+
+            assertEquals(
+                SettingsSideEffect.RequestNotificationPermission(NotificationTarget.REMINDER),
+                awaitItem()
+            )
+        }
+        assertFalse(settingsRepository.notificationSettings.value.reminderEnabled)
+        assertNull(reminderScheduler.scheduledTime)
+    }
+
+    @Test
+    fun toggleOff_withoutPermission_turnsOffDirectly() = runTest {
+        settingsRepository.notificationSettings.value =
+            NotificationSettings(budgetAlertEnabled = true)
+        val viewModel = blockedViewModel()
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(SettingsIntent.BudgetAlertToggled(false))
+
+            expectNoEvents()
+        }
+        assertFalse(settingsRepository.notificationSettings.value.budgetAlertEnabled)
+    }
+
+    @Test
+    fun permissionGranted_turnsOnRequestedTarget() {
+        val viewModel = blockedViewModel()
+
+        viewModel.onIntent(
+            SettingsIntent.NotificationPermissionResult(
+                NotificationTarget.BUDGET_ALERT,
+                granted = true,
+                canAskAgain = true
+            )
+        )
+
+        val state = viewModel.uiState.value
+        assertTrue(state.canPostNotifications)
+        assertTrue(state.notification.budgetAlertEnabled)
+        assertFalse(state.notification.reminderEnabled)
+    }
+
+    @Test
+    fun permissionDenied_canAskAgain_staysOffAndShowsMessage() = runTest {
+        val viewModel = blockedViewModel()
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(
+                SettingsIntent.NotificationPermissionResult(
+                    NotificationTarget.REMINDER,
+                    granted = false,
+                    canAskAgain = true
+                )
+            )
+
+            assertEquals(
+                SettingsSideEffect.ShowMessage(R.string.settings_notification_permission_denied),
+                awaitItem()
+            )
+        }
+        assertFalse(viewModel.uiState.value.notification.reminderEnabled)
+        assertFalse(viewModel.uiState.value.isPermissionSettingsDialogVisible)
+    }
+
+    @Test
+    fun permissionDeniedPermanently_showsSettingsDialog() {
+        val viewModel = blockedViewModel()
+
+        viewModel.onIntent(
+            SettingsIntent.NotificationPermissionResult(
+                NotificationTarget.REMINDER,
+                granted = false,
+                canAskAgain = false
+            )
+        )
+
+        assertTrue(viewModel.uiState.value.isPermissionSettingsDialogVisible)
+        assertFalse(viewModel.uiState.value.notification.reminderEnabled)
+    }
+
+    @Test
+    fun openSettings_thenAllowedInSettings_turnsOnPendingTarget() = runTest {
+        val viewModel = blockedViewModel()
+        viewModel.onIntent(
+            SettingsIntent.NotificationPermissionResult(
+                NotificationTarget.REMINDER,
+                granted = false,
+                canAskAgain = false
+            )
+        )
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(SettingsIntent.OpenNotificationSettingsClicked)
+
+            assertEquals(SettingsSideEffect.OpenNotificationSettings, awaitItem())
+        }
+        assertFalse(viewModel.uiState.value.isPermissionSettingsDialogVisible)
+
+        // 설정 앱에서 허용하고 돌아왔다
+        viewModel.onIntent(SettingsIntent.NotificationPermissionChecked(canPost = true))
+
+        assertTrue(viewModel.uiState.value.notification.reminderEnabled)
+        assertEquals(LocalTime.of(21, 0), reminderScheduler.scheduledTime)
+    }
+
+    @Test
+    fun settingsDialogDismissed_forgetsPendingTarget() {
+        val viewModel = blockedViewModel()
+        viewModel.onIntent(
+            SettingsIntent.NotificationPermissionResult(
+                NotificationTarget.REMINDER,
+                granted = false,
+                canAskAgain = false
+            )
+        )
+
+        viewModel.onIntent(SettingsIntent.PermissionSettingsDialogDismissed)
+        // 나중에 다른 이유로 권한이 생겨도 사용자가 취소한 알림을 켜지 않는다
+        viewModel.onIntent(SettingsIntent.NotificationPermissionChecked(canPost = true))
+
+        assertFalse(viewModel.uiState.value.isPermissionSettingsDialogVisible)
+        assertFalse(viewModel.uiState.value.notification.reminderEnabled)
+    }
+
+    @Test
+    fun notificationBlocked_onlyWhenSomethingIsOn() {
+        val viewModel = blockedViewModel()
+        assertFalse(viewModel.uiState.value.isNotificationBlocked)
+
+        settingsRepository.notificationSettings.value =
+            NotificationSettings(reminderEnabled = true)
+
+        assertTrue(viewModel.uiState.value.isNotificationBlocked)
     }
 
     private fun viewModel() = SettingsViewModel(

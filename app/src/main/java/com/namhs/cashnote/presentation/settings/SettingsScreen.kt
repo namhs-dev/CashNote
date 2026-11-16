@@ -1,7 +1,15 @@
 package com.namhs.cashnote.presentation.settings
 
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.os.Build
+import android.provider.Settings
 import android.text.format.DateFormat
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,6 +27,8 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,11 +46,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.ExchangeRate
@@ -52,6 +68,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsRoute(
@@ -59,24 +76,97 @@ fun SettingsRoute(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val resources = LocalResources.current
+    val activity = LocalActivity.current
+
+    // 권한 창이 떠 있는 동안 화면이 다시 만들어져도 무엇을 켜려 했는지 잃지 않게 저장한다
+    var permissionTarget by rememberSaveable { mutableStateOf<NotificationTarget?>(null) }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        val target = permissionTarget ?: return@rememberLauncherForActivityResult
+        permissionTarget = null
+        // 거부 직후 rationale이 false면 "다시 묻지 않기" 상태라 시스템 창을 더 띄울 수 없다
+        val canAskAgain = activity != null &&
+            ActivityCompat.shouldShowRequestPermissionRationale(activity, POST_NOTIFICATIONS)
+        viewModel.onIntent(
+            SettingsIntent.NotificationPermissionResult(target, granted, canAskAgain)
+        )
+    }
+
+    // 설정 앱에서 알림을 바꾸고 돌아올 수 있으므로 화면이 보일 때마다 다시 확인한다
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        viewModel.onIntent(
+            SettingsIntent.NotificationPermissionChecked(canPostNotifications(context))
+        )
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.sideEffect.collect { effect ->
             when (effect) {
                 SettingsSideEffect.NavigateToCategoryManage -> onNavigateToCategoryManage()
+
+                is SettingsSideEffect.RequestNotificationPermission -> when {
+                    // 그새 허용됐으면 바로 켠다
+                    canPostNotifications(context) -> viewModel.onIntent(
+                        SettingsIntent.NotificationPermissionResult(effect.target, true, true)
+                    )
+
+                    needsRuntimePermission(context) -> {
+                        permissionTarget = effect.target
+                        permissionLauncher.launch(POST_NOTIFICATIONS)
+                    }
+
+                    // 권한은 있는데 앱 알림이 꺼져 있다(또는 Android 12 이하). 설정 앱에서만 켤 수 있다
+                    else -> viewModel.onIntent(
+                        SettingsIntent.NotificationPermissionResult(effect.target, false, false)
+                    )
+                }
+
+                SettingsSideEffect.OpenNotificationSettings -> openNotificationSettings(context)
+
+                is SettingsSideEffect.ShowMessage -> launch {
+                    snackbarHostState.showSnackbar(resources.getString(effect.messageRes))
+                }
             }
         }
     }
 
-    SettingsScreen(state = state, onIntent = viewModel::onIntent)
+    SettingsScreen(
+        state = state,
+        onIntent = viewModel::onIntent,
+        snackbarHostState = snackbarHostState
+    )
 }
+
+/** Android 13+ 권한이 있고 사용자가 앱 알림을 꺼 두지 않았다 */
+private fun canPostNotifications(context: Context): Boolean =
+    NotificationManagerCompat.from(context).areNotificationsEnabled()
+
+/** Android 13+에서 아직 알림 권한을 받지 않았다 */
+private fun needsRuntimePermission(context: Context): Boolean =
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        ContextCompat.checkSelfPermission(context, POST_NOTIFICATIONS) !=
+        PackageManager.PERMISSION_GRANTED
+
+/** 이 앱의 시스템 알림 설정 화면 */
+private fun openNotificationSettings(context: Context) {
+    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+    context.startActivity(intent)
+}
+
+private const val POST_NOTIFICATIONS = "android.permission.POST_NOTIFICATIONS"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     state: SettingsUiState,
     onIntent: (SettingsIntent) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     // 다이얼로그 표시 여부는 화면 안에서만 쓰는 UI 상태라 ViewModel에 두지 않는다
     var showCurrencyDialog by rememberSaveable { mutableStateOf(false) }
@@ -86,7 +176,8 @@ fun SettingsScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(title = { Text(stringResource(R.string.settings_title)) })
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         // 설정 항목(기본 통화, 카테고리 관리 등)을 위에서부터 쌓는다
         Column(
@@ -120,10 +211,31 @@ fun SettingsScreen(
             )
             NotificationSection(
                 settings = state.notification,
+                isBlocked = state.isNotificationBlocked,
                 onIntent = onIntent,
                 onTimeClick = { showTimeDialog = true }
             )
         }
+    }
+
+    if (state.isPermissionSettingsDialogVisible) {
+        AlertDialog(
+            onDismissRequest = { onIntent(SettingsIntent.PermissionSettingsDialogDismissed) },
+            title = { Text(stringResource(R.string.settings_notification_permission_title)) },
+            text = { Text(stringResource(R.string.settings_notification_permission_text)) },
+            confirmButton = {
+                TextButton(onClick = { onIntent(SettingsIntent.OpenNotificationSettingsClicked) }) {
+                    Text(stringResource(R.string.settings_notification_open_settings))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { onIntent(SettingsIntent.PermissionSettingsDialogDismissed) }
+                ) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
     }
 
     if (showTimeDialog) {
@@ -155,6 +267,7 @@ fun SettingsScreen(
 @Composable
 private fun NotificationSection(
     settings: NotificationSettings,
+    isBlocked: Boolean,
     onIntent: (SettingsIntent) -> Unit,
     onTimeClick: () -> Unit
 ) {
@@ -164,6 +277,20 @@ private fun NotificationSection(
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp)
     )
+    // 켜 두었는데 시스템에서 막혀 있으면 눌러서 설정 앱으로 갈 수 있게 알린다
+    if (isBlocked) {
+        Text(
+            text = stringResource(R.string.settings_notification_blocked),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(role = Role.Button) {
+                    onIntent(SettingsIntent.OpenNotificationSettingsClicked)
+                }
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+    }
     SwitchItem(
         title = stringResource(R.string.settings_reminder),
         description = stringResource(R.string.settings_reminder_description),
