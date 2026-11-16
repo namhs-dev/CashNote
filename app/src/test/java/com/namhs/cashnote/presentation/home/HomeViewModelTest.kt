@@ -10,14 +10,18 @@ import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.usecase.AddTransactionUseCase
 import com.namhs.cashnote.domain.usecase.DeleteTransactionUseCase
+import com.namhs.cashnote.domain.usecase.ExportMonthlyCsvUseCase
 import com.namhs.cashnote.domain.usecase.GetBudgetStatusUseCase
 import com.namhs.cashnote.domain.usecase.GetMonthlySummaryUseCase
 import com.namhs.cashnote.domain.usecase.GetMonthlyTransactionsUseCase
 import com.namhs.cashnote.domain.usecase.SetMonthlyBudgetUseCase
+import com.namhs.cashnote.domain.usecase.ShareMonthlyCsvUseCase
 import com.namhs.cashnote.testing.FakeBudgetRepository
 import com.namhs.cashnote.testing.FakeCategoryRepository
+import com.namhs.cashnote.testing.FakeExportFileRepository
 import com.namhs.cashnote.testing.FakeTransactionRepository
 import com.namhs.cashnote.testing.MainDispatcherRule
+import java.io.IOException
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -53,6 +57,7 @@ class HomeViewModelTest {
         FakeTransactionRepository(listOf(breakfast, lunch, dinner, nextMonthTransaction))
     private val categoryRepository = FakeCategoryRepository(listOf(food))
     private val budgetRepository = FakeBudgetRepository()
+    private val exportFileRepository = FakeExportFileRepository()
 
     // 목록
 
@@ -381,8 +386,72 @@ class HomeViewModelTest {
         deleteTransaction = DeleteTransactionUseCase(repository),
         addTransaction = AddTransactionUseCase(repository),
         getBudgetStatus = GetBudgetStatusUseCase(budgetRepository, repository),
-        setMonthlyBudget = SetMonthlyBudgetUseCase(budgetRepository)
+        setMonthlyBudget = SetMonthlyBudgetUseCase(budgetRepository),
+        shareMonthlyCsv = ShareMonthlyCsvUseCase(
+            ExportMonthlyCsvUseCase(repository, categoryRepository),
+            exportFileRepository
+        )
     )
+
+    // CSV 내보내기
+
+    @Test
+    fun exportClicked_savesThisMonthAndSharesFile() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(HomeIntent.ExportClicked)
+
+            assertEquals(
+                HomeSideEffect.ShareFile("content://test/cashnote-$thisMonth.csv"),
+                awaitItem()
+            )
+        }
+        // 다른 달 거래는 빠지고 이번 달 3건만 저장한다
+        assertEquals(3, exportFileRepository.saved.single().rowCount)
+        assertFalse(viewModel.uiState.value.isExporting)
+    }
+
+    @Test
+    fun exportClicked_followsDisplayedMonth() = runTest {
+        val viewModel = viewModel()
+        viewModel.onIntent(HomeIntent.NextMonthClicked)
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(HomeIntent.ExportClicked)
+
+            assertEquals(
+                HomeSideEffect.ShareFile("content://test/cashnote-$nextMonth.csv"),
+                awaitItem()
+            )
+        }
+        assertEquals(1, exportFileRepository.saved.single().rowCount)
+    }
+
+    @Test
+    fun exportClicked_emptyMonth_showsMessageWithoutFile() = runTest {
+        val viewModel = viewModel(FakeTransactionRepository())
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(HomeIntent.ExportClicked)
+
+            assertEquals(HomeSideEffect.ShowMessage(R.string.home_export_empty), awaitItem())
+        }
+        assertTrue(exportFileRepository.saved.isEmpty())
+    }
+
+    @Test
+    fun exportClicked_saveFailure_showsMessage() = runTest {
+        exportFileRepository.failure = IOException("disk full")
+        val viewModel = viewModel()
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(HomeIntent.ExportClicked)
+
+            assertEquals(HomeSideEffect.ShowMessage(R.string.home_export_failed), awaitItem())
+        }
+        assertFalse(viewModel.uiState.value.isExporting)
+    }
 
     // 프로세스 복원처럼 이미 월이 저장된 상태를 만든다
     private fun savedMonth(month: String) =

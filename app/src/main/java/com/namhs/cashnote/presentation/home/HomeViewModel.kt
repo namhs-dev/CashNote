@@ -11,6 +11,7 @@ import com.namhs.cashnote.domain.usecase.GetBudgetStatusUseCase
 import com.namhs.cashnote.domain.usecase.GetMonthlySummaryUseCase
 import com.namhs.cashnote.domain.usecase.GetMonthlyTransactionsUseCase
 import com.namhs.cashnote.domain.usecase.SetMonthlyBudgetUseCase
+import com.namhs.cashnote.domain.usecase.ShareMonthlyCsvUseCase
 import com.namhs.cashnote.presentation.base.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.YearMonth
@@ -31,7 +32,8 @@ class HomeViewModel @Inject constructor(
     private val deleteTransaction: DeleteTransactionUseCase,
     private val addTransaction: AddTransactionUseCase,
     private val getBudgetStatus: GetBudgetStatusUseCase,
-    private val setMonthlyBudget: SetMonthlyBudgetUseCase
+    private val setMonthlyBudget: SetMonthlyBudgetUseCase,
+    private val shareMonthlyCsv: ShareMonthlyCsvUseCase
 ) : MviViewModel<HomeUiState, HomeIntent, HomeSideEffect>(
     // 프로세스가 정리됐다가 복원되면 보던 월에서 다시 시작한다
     HomeUiState(
@@ -66,6 +68,31 @@ class HomeViewModel @Inject constructor(
             is HomeIntent.BudgetSaved -> saveBudget(intent.input)
 
             HomeIntent.BudgetDialogDismissed -> setState { copy(isBudgetDialogVisible = false) }
+
+            HomeIntent.ExportClicked -> exportMonth()
+        }
+    }
+
+    // 표시 중인 월을 CSV로 저장하고 공유 시트를 연다. 거래가 없으면 파일을 만들지 않는다
+    private fun exportMonth() {
+        if (currentState.isExporting) return
+        val month = currentState.month
+        setState { copy(isExporting = true) }
+        viewModelScope.launch {
+            try {
+                val uri = shareMonthlyCsv(month)
+                if (uri == null) {
+                    postSideEffect(HomeSideEffect.ShowMessage(R.string.home_export_empty))
+                } else {
+                    postSideEffect(HomeSideEffect.ShareFile(uri))
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                postSideEffect(HomeSideEffect.ShowMessage(R.string.home_export_failed))
+            } finally {
+                setState { copy(isExporting = false) }
+            }
         }
     }
 

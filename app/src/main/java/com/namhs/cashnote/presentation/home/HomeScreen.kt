@@ -1,5 +1,6 @@
 package com.namhs.cashnote.presentation.home
 
+import android.content.Context
 import android.content.res.Configuration
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -25,6 +26,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -42,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -50,6 +53,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ShareCompat
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.namhs.cashnote.R
@@ -77,6 +82,7 @@ fun HomeRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
+    val context = LocalContext.current
 
     LaunchedEffect(viewModel) {
         viewModel.sideEffect.collect { effect ->
@@ -100,6 +106,8 @@ fun HomeRoute(
                 is HomeSideEffect.ShowMessage -> launch {
                     snackbarHostState.showSnackbar(resources.getString(effect.messageRes))
                 }
+
+                is HomeSideEffect.ShareFile -> shareCsv(context, effect.uri)
             }
         }
     }
@@ -110,6 +118,20 @@ fun HomeRoute(
         snackbarHostState = snackbarHostState
     )
 }
+
+/**
+ * CSV 파일을 공유 시트로 연다.
+ * ShareCompat이 받는 앱에 이 파일의 읽기 권한(FLAG_GRANT_READ_URI_PERMISSION)을 함께 넘긴다.
+ */
+private fun shareCsv(context: Context, uri: String) {
+    ShareCompat.IntentBuilder(context)
+        .setType(CSV_MIME_TYPE)
+        .setStream(uri.toUri())
+        .setChooserTitle(R.string.home_export_chooser_title)
+        .startChooser()
+}
+
+private const val CSV_MIME_TYPE = "text/csv"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -130,6 +152,17 @@ fun HomeScreen(
                         onPrevious = { onIntent(HomeIntent.PreviousMonthClicked) },
                         onNext = { onIntent(HomeIntent.NextMonthClicked) }
                     )
+                },
+                actions = {
+                    IconButton(
+                        onClick = { onIntent(HomeIntent.ExportClicked) },
+                        enabled = !state.isExporting
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_share),
+                            contentDescription = stringResource(R.string.home_export)
+                        )
+                    }
                 }
             )
         },

@@ -19,7 +19,9 @@ data class HomeUiState(
     /** 표시 중인 월의 예산 대비 지출. 예산이 없으면 null */
     val budget: BudgetStatus? = null,
     /** 예산 입력 다이얼로그 표시 여부 */
-    val isBudgetDialogVisible: Boolean = false
+    val isBudgetDialogVisible: Boolean = false,
+    /** CSV를 만드는 중. 이때는 내보내기 버튼을 막는다 */
+    val isExporting: Boolean = false
 ) {
     /** 불러오기가 끝났는데 거래가 하나도 없다 */
     val isEmpty: Boolean
@@ -55,6 +57,9 @@ sealed interface HomeIntent {
 
     /** 예산 입력 취소 */
     data object BudgetDialogDismissed : HomeIntent
+
+    /** 상단 바의 내보내기 버튼. 표시 중인 월을 CSV로 공유한다 */
+    data object ExportClicked : HomeIntent
 }
 
 /** 홈 화면의 일회성 이벤트 */
@@ -67,4 +72,7 @@ sealed interface HomeSideEffect {
 
     /** 삭제·복구 실패 등 사용자에게 알릴 메시지 */
     data class ShowMessage(@StringRes val messageRes: Int) : HomeSideEffect
+
+    /** 저장한 CSV 파일(content:// 주소)을 공유 시트로 연다 */
+    data class ShareFile(val uri: String) : HomeSideEffect
 }
