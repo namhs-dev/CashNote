@@ -1,9 +1,13 @@
 package com.namhs.cashnote.presentation.settings
 
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.text.format.DateFormat
@@ -27,8 +31,10 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,10 +62,12 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.namhs.cashnote.BuildConfig
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.ExchangeRate
 import com.namhs.cashnote.domain.model.NotificationSettings
@@ -132,6 +140,27 @@ fun SettingsRoute(
 
                 SettingsSideEffect.OpenNotificationSettings -> openNotificationSettings(context)
 
+                SettingsSideEffect.OpenContactEmail -> if (!openContactEmail(context)) {
+                    viewModel.onIntent(SettingsIntent.ContactEmailUnavailable)
+                }
+
+                // 주소를 직접 보여 주고, 다른 앱에 붙여 넣을 수 있게 복사 버튼을 단다
+                SettingsSideEffect.ShowContactEmailUnavailable -> launch {
+                    val address = resources.getString(R.string.support_email)
+                    val result = snackbarHostState.showSnackbar(
+                        message = resources.getString(R.string.contact_email_unavailable, address),
+                        actionLabel = resources.getString(R.string.action_copy),
+                        duration = SnackbarDuration.Long
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        copyToClipboard(
+                            context,
+                            resources.getString(R.string.settings_contact),
+                            address
+                        )
+                    }
+                }
+
                 is SettingsSideEffect.ShowMessage -> launch {
                     snackbarHostState.showSnackbar(resources.getString(effect.messageRes))
                 }
@@ -161,6 +190,45 @@ private fun openNotificationSettings(context: Context) {
     val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
         .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
     context.startActivity(intent)
+}
+
+/**
+ * 문의 메일 작성 화면을 연다. 받는 주소·제목과, 문제를 재현하는 데 필요한 앱·기기 정보를 미리 채운다.
+ *
+ * 설치된 메일 앱이 없으면 false. Android 11+에서는 `resolveActivity`가 `<queries>` 선언 없이는 늘 null이라,
+ * 먼저 확인하지 않고 실행해 본 뒤 예외로 판단한다.
+ */
+private fun openContactEmail(context: Context): Boolean {
+    val address = context.getString(R.string.support_email)
+    val body = context.getString(
+        R.string.contact_email_body,
+        BuildConfig.VERSION_NAME,
+        BuildConfig.VERSION_CODE,
+        "${Build.MANUFACTURER} ${Build.MODEL}",
+        Build.VERSION.RELEASE,
+        Build.VERSION.SDK_INT
+    )
+    val subject = context.getString(R.string.contact_email_subject)
+    // Gmail은 ACTION_SENDTO의 제목·본문 extra를 무시하고 mailto URI의 query만 읽는다.
+    // 다른 메일 앱은 extra를 읽기도 해서 둘 다 넣는다. 주소의 "+"는 공백으로 해석되지 않게 인코딩한다
+    val uri = "mailto:${Uri.encode(address)}" +
+        "?subject=${Uri.encode(subject)}&body=${Uri.encode(body)}"
+    val intent = Intent(Intent.ACTION_SENDTO, uri.toUri())
+        .putExtra(Intent.EXTRA_EMAIL, arrayOf(address))
+        .putExtra(Intent.EXTRA_SUBJECT, subject)
+        .putExtra(Intent.EXTRA_TEXT, body)
+    return try {
+        context.startActivity(intent)
+        true
+    } catch (e: ActivityNotFoundException) {
+        false
+    }
+}
+
+/** Android 13+는 복사하면 시스템이 알림을 띄워 주므로 따로 안내하지 않는다 */
+private fun copyToClipboard(context: Context, label: String, text: String) {
+    val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
+    clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
 }
 
 private const val POST_NOTIFICATIONS = "android.permission.POST_NOTIFICATIONS"
@@ -226,6 +294,11 @@ fun SettingsScreen(
                 trailingContent = {
                     Text(text = state.appVersion, style = MaterialTheme.typography.bodyLarge)
                 }
+            )
+            // 주소는 메일 작성 화면에 채워지므로 목록에는 보이지 않는다. 메일 앱이 없을 때만 스낵바로 알려 준다
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_contact)) },
+                modifier = Modifier.clickable { onIntent(SettingsIntent.ContactClicked) }
             )
             ListItem(
                 headlineContent = { Text(stringResource(R.string.oss_licenses_title)) },
