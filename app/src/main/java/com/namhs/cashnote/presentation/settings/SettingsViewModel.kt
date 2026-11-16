@@ -30,6 +30,9 @@ class SettingsViewModel @Inject constructor(
             // 저장하면 구독 중인 기본 통화가 바뀌어 State에 반영된다
             is SettingsIntent.DefaultCurrencySelected ->
                 viewModelScope.launch { setDefaultCurrency(intent.currencyCode) }
+
+            SettingsIntent.CategoryManageClicked ->
+                postSideEffect(SettingsSideEffect.NavigateToCategoryManage)
         }
     }
 }

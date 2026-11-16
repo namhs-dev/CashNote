@@ -33,6 +33,8 @@
     <string name="settings_title">설정</string>
     <string name="settings_default_currency">기본 통화</string>
     <string name="settings_default_currency_description">새 내역을 입력할 때 처음 선택되는 통화</string>
+    <string name="settings_category_manage_description">지출·수입 카테고리 추가, 수정, 삭제</string>
+    <string name="category_manage_title">카테고리 관리</string>
     <string name="statistics_chart_description">카테고리별 지출 차트</string>
     <string name="statistics_total_expense">총 지출</string>
     <string name="statistics_empty">이 달의 지출이 없습니다</string>

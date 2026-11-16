@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -41,8 +42,19 @@ import java.time.Instant
 import java.time.LocalDate
 
 @Composable
-fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsRoute(
+    onNavigateToCategoryManage: () -> Unit,
+    viewModel: SettingsViewModel = hiltViewModel()
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(viewModel) {
+        viewModel.sideEffect.collect { effect ->
+            when (effect) {
+                SettingsSideEffect.NavigateToCategoryManage -> onNavigateToCategoryManage()
+            }
+        }
+    }
 
     SettingsScreen(state = state, onIntent = viewModel::onIntent)
 }
@@ -83,6 +95,15 @@ fun SettingsScreen(
                     )
                 },
                 modifier = Modifier.clickable { showCurrencyDialog = true }
+            )
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.category_manage_title)) },
+                supportingContent = {
+                    Text(stringResource(R.string.settings_category_manage_description))
+                },
+                modifier = Modifier.clickable {
+                    onIntent(SettingsIntent.CategoryManageClicked)
+                }
             )
         }
     }

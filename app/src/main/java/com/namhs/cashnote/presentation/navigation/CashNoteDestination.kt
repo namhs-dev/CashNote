@@ -18,6 +18,10 @@ sealed interface CashNoteDestination {
 
     // 내역 입력·수정 화면 (탭 아님). transactionId가 0이면 새 거래, 아니면 그 거래를 수정한다
     // transactionId 이름을 바꾸면 TransactionEditViewModel.ARG_TRANSACTION_ID도 같이 바꾼다
+    // 설정 > 카테고리 관리 화면 (탭 아님)
+    @Serializable
+    data object CategoryManage : CashNoteDestination
+
     @Serializable
     data class TransactionEdit(val transactionId: Long = 0) : CashNoteDestination
 }

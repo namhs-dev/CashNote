@@ -18,7 +18,11 @@ data class SettingsUiState(
 sealed interface SettingsIntent {
     /** 기본 통화 선택. null이면 원화 */
     data class DefaultCurrencySelected(val currencyCode: String?) : SettingsIntent
+
+    data object CategoryManageClicked : SettingsIntent
 }
 
-/** 설정 화면의 일회성 이벤트. 지금은 없다 */
-sealed interface SettingsSideEffect
+/** 설정 화면의 일회성 이벤트 */
+sealed interface SettingsSideEffect {
+    data object NavigateToCategoryManage : SettingsSideEffect
+}

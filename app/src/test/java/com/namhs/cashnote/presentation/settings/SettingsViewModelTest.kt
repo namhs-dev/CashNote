@@ -1,5 +1,6 @@
 package com.namhs.cashnote.presentation.settings
 
+import app.cash.turbine.test
 import com.namhs.cashnote.domain.model.ExchangeRate
 import com.namhs.cashnote.domain.usecase.GetDefaultCurrencyUseCase
 import com.namhs.cashnote.domain.usecase.GetExchangeRatesUseCase
@@ -10,6 +11,7 @@ import com.namhs.cashnote.testing.MainDispatcherRule
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -72,6 +74,17 @@ class SettingsViewModelTest {
 
         assertNull(settingsRepository.defaultCurrency.value)
         assertNull(viewModel.uiState.value.defaultCurrency)
+    }
+
+    @Test
+    fun categoryManageClicked_navigatesToCategoryManage() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(SettingsIntent.CategoryManageClicked)
+
+            assertEquals(SettingsSideEffect.NavigateToCategoryManage, awaitItem())
+        }
     }
 
     private fun viewModel() = SettingsViewModel(
