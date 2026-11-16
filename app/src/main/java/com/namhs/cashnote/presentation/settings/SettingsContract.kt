@@ -41,6 +41,8 @@ sealed interface SettingsIntent {
 
     data object CategoryManageClicked : SettingsIntent
 
+    data object OssLicensesClicked : SettingsIntent
+
     /** 기록 리마인더 켜기/끄기 */
     data class ReminderToggled(val enabled: Boolean) : SettingsIntent
 
@@ -74,6 +76,8 @@ sealed interface SettingsIntent {
 /** 설정 화면의 일회성 이벤트 */
 sealed interface SettingsSideEffect {
     data object NavigateToCategoryManage : SettingsSideEffect
+
+    data object NavigateToOssLicenses : SettingsSideEffect
 
     /** 알림을 켜려면 권한이 필요하다. Route가 권한 창을 띄우고 결과를 돌려준다 */
     data class RequestNotificationPermission(val target: NotificationTarget) :

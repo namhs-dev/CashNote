@@ -22,6 +22,10 @@ sealed interface CashNoteDestination {
     @Serializable
     data object CategoryManage : CashNoteDestination
 
+    // 설정 > 오픈소스 라이선스 화면 (탭 아님)
+    @Serializable
+    data object OssLicenses : CashNoteDestination
+
     @Serializable
     data class TransactionEdit(val transactionId: Long = 0) : CashNoteDestination
 }

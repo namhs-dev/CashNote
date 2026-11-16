@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.ktlint)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.androidx.room)
+    alias(libs.plugins.aboutlibraries.android)
 }
 
 // 환율 API 키. CI는 환경 변수(GitHub Secrets), 로컬은 local.properties에서 읽는다.
@@ -86,6 +87,7 @@ dependencies {
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.aboutlibraries.compose.m3)
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
     implementation(libs.retrofit)
