@@ -48,6 +48,12 @@
     <string name="settings_default_currency">기본 통화</string>
     <string name="settings_default_currency_description">새 내역을 입력할 때 처음 선택되는 통화</string>
     <string name="settings_category_manage_description">지출·수입 카테고리 추가, 수정, 삭제</string>
+    <string name="settings_section_notification">알림</string>
+    <string name="settings_reminder">기록 리마인더</string>
+    <string name="settings_reminder_description">오늘 기록한 내역이 없으면 정한 시간에 알려 줍니다</string>
+    <string name="settings_reminder_time">알림 시간</string>
+    <string name="settings_budget_alert">예산 알림</string>
+    <string name="settings_budget_alert_description">이번 달 지출이 예산의 80%와 100%에 이르면 알려 줍니다</string>
     <string name="category_manage_title">카테고리 관리</string>
     <string name="category_add">카테고리 추가</string>
     <string name="category_edit">카테고리 수정</string>
