@@ -50,6 +50,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
@@ -454,20 +456,30 @@ private fun DateField(date: LocalDate, onDateSelect: (LocalDate) -> Unit) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
     val formatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG) }
 
+    val dateText = date.format(formatter)
+    val dateLabel = stringResource(R.string.transaction_date_label)
     // 읽기 전용 입력창은 클릭을 받지 않으므로 위에 투명한 클릭 영역을 덮는다
     Box {
         OutlinedTextField(
-            value = date.format(formatter),
+            value = dateText,
             onValueChange = {},
-            modifier = Modifier.fillMaxWidth(),
+            // 스크린리더에는 아래 클릭 영역 하나로만 읽히게 입력창의 의미는 지운다
+            modifier = Modifier
+                .fillMaxWidth()
+                .clearAndSetSemantics {},
             readOnly = true,
-            label = { Text(stringResource(R.string.transaction_date_label)) },
+            label = { Text(dateLabel) },
             singleLine = true
         )
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .clickable { showDialog = true }
+                .clickable(
+                    onClickLabel = stringResource(R.string.transaction_date_select),
+                    role = Role.Button
+                ) { showDialog = true }
+                // "날짜, 2026년 11월 16일, 버튼"처럼 읽힌다
+                .semantics { contentDescription = "$dateLabel, $dateText" }
         )
     }
 

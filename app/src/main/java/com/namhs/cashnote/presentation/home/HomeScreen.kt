@@ -48,6 +48,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -308,11 +311,18 @@ private fun TransactionList(
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surface)
                         .padding(horizontal = 16.dp, vertical = 8.dp)
+                        // 스크린리더가 날짜 단위로 건너뛸 수 있게 제목으로 표시한다
+                        .semantics { heading() }
                 )
             }
             items(items = group.items, key = { it.transaction.id }) { item ->
-                SwipeToDeleteBox(onDelete = { onItemDelete(item.transaction.id) }) {
-                    TransactionRow(item = item, onClick = { onItemClick(item.transaction.id) })
+                val onDelete = { onItemDelete(item.transaction.id) }
+                SwipeToDeleteBox(onDelete = onDelete) {
+                    TransactionRow(
+                        item = item,
+                        onClick = { onItemClick(item.transaction.id) },
+                        onDelete = onDelete
+                    )
                 }
             }
         }
@@ -348,14 +358,31 @@ private fun SwipeToDeleteBox(onDelete: () -> Unit, content: @Composable () -> Un
 }
 
 @Composable
-private fun TransactionRow(item: TransactionWithCategory, onClick: () -> Unit) {
+private fun TransactionRow(
+    item: TransactionWithCategory,
+    onClick: () -> Unit,
+    onDelete: () -> Unit
+) {
     val transaction = item.transaction
+    val deleteLabel = stringResource(R.string.action_delete)
     Row(
         // 밀 때 뒤의 삭제 배경이 비치지 않도록 앞면에 배경을 깐다
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .clickable(onClick = onClick)
+            .clickable(
+                onClickLabel = stringResource(R.string.home_edit_transaction),
+                onClick = onClick
+            )
+            // 밀어서 삭제는 스크린리더로 할 수 없으므로 "작업" 메뉴에 삭제를 둔다
+            .semantics {
+                customActions = listOf(
+                    CustomAccessibilityAction(deleteLabel) {
+                        onDelete()
+                        true
+                    }
+                )
+            }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
