@@ -13,6 +13,8 @@ plugins {
     alias(libs.plugins.google.services)
     // release 빌드의 R8 매핑 파일을 Crashlytics에 올려 난독화된 스택트레이스를 복원한다
     alias(libs.plugins.firebase.crashlytics)
+    // Play 스토어 스크린샷·그래픽 이미지를 JVM 테스트(Robolectric)로 렌더링한다 (#61)
+    alias(libs.plugins.roborazzi)
 }
 
 // 환율 API 키. CI는 환경 변수(GitHub Secrets), 로컬은 local.properties에서 읽는다.
@@ -67,11 +69,22 @@ android {
         compose = true
         buildConfig = true
     }
+    testOptions {
+        // Robolectric이 앱 리소스(문자열·drawable·테마)를 읽어 화면을 그릴 수 있게 한다
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 // Room 스키마를 버전별 JSON으로 내보내 Git에 커밋한다. migration 작성·테스트의 기준이 된다.
 room {
     schemaDirectory("$projectDir/schemas")
+}
+
+// 스토어 이미지 렌더링(store 패키지)은 recordRoborazziDebug로 만들 때만 돌린다.
+// 일반 단위 테스트·CI에서 Robolectric용 Android 런타임을 내려받지 않게 제외한다
+val isRoborazziRun = gradle.startParameter.taskNames.any { it.contains("Roborazzi") }
+tasks.withType<Test>().configureEach {
+    if (!isRoborazziRun) exclude("**/store/**")
 }
 
 ktlint {
@@ -114,6 +127,11 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(platform(libs.okhttp.bom))
     testImplementation(libs.okhttp.mockwebserver3)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
