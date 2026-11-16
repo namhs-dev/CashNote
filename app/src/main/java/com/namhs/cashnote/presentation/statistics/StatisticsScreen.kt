@@ -37,6 +37,7 @@ import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.Category
 import com.namhs.cashnote.domain.model.CategoryExpense
 import com.namhs.cashnote.domain.model.TransactionType
+import com.namhs.cashnote.presentation.component.CategoryColorDot
 import com.namhs.cashnote.presentation.component.MonthSelector
 import com.namhs.cashnote.presentation.component.formatAmount
 import com.namhs.cashnote.presentation.theme.CashNoteTheme
@@ -151,11 +152,7 @@ private fun LegendRow(expense: CategoryExpense) {
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .background(Color(expense.category.color), CircleShape)
-        )
+        CategoryColorDot(color = expense.category.color)
         Spacer(Modifier.width(16.dp))
         Text(
             text = expense.category.name,

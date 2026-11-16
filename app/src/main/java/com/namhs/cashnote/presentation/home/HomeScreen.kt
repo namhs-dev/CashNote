@@ -69,6 +69,7 @@ import com.namhs.cashnote.domain.model.PaymentMethod
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.model.TransactionWithCategory
+import com.namhs.cashnote.presentation.component.CategoryColorDot
 import com.namhs.cashnote.presentation.component.MonthSelector
 import com.namhs.cashnote.presentation.component.formatAmount
 import com.namhs.cashnote.presentation.component.formatForeignAmount
@@ -386,11 +387,7 @@ private fun TransactionRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(12.dp)
-                .background(Color(item.category.color), CircleShape)
-        )
+        CategoryColorDot(color = item.category.color)
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(text = item.category.name, style = MaterialTheme.typography.bodyLarge)

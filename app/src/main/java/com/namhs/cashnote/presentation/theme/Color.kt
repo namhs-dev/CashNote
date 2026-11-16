@@ -73,10 +73,11 @@ val InverseOnSurfaceLight = Color(0xFFEEF2EF)
 val InverseSurfaceDark = Color(0xFFDEE4E1)
 val InverseOnSurfaceDark = Color(0xFF2C3130)
 
-// 수입·지출 강조색
-val IncomeLight = Color(0xFF1E63D6)
+// 수입·지출 강조색. 금액·예산 문구에 글자색으로 쓰므로 라이트·다크의 모든 표면(카드 포함)에서
+// WCAG AA 일반 글자 기준 4.5:1 이상이어야 한다 (ColorContrastTest가 검사한다)
+val IncomeLight = Color(0xFF1A57BE)
 val IncomeDark = Color(0xFF9DBBFF)
-val ExpenseLight = Color(0xFFC62828)
+val ExpenseLight = Color(0xFFB71C1C)
 val ExpenseDark = Color(0xFFFF9C94)
-val WarningLight = Color(0xFFB26A00)
+val WarningLight = Color(0xFF8A5300)
 val WarningDark = Color(0xFFFFC266)

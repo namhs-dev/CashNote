@@ -54,6 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.Category
 import com.namhs.cashnote.domain.model.TransactionType
+import com.namhs.cashnote.presentation.component.CategoryColorDot
 import com.namhs.cashnote.presentation.theme.CashNoteTheme
 import kotlinx.coroutines.launch
 
@@ -185,17 +186,8 @@ private fun TypeTabs(
 private fun CategoryRow(category: Category, onClick: () -> Unit) {
     ListItem(
         headlineContent = { Text(category.name) },
-        leadingContent = { ColorDot(color = category.color, size = 12) },
+        leadingContent = { CategoryColorDot(color = category.color) },
         modifier = Modifier.clickable(onClick = onClick)
-    )
-}
-
-@Composable
-private fun ColorDot(color: Long, size: Int, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .size(size.dp)
-            .background(Color(color), CircleShape)
     )
 }
 
@@ -312,6 +304,8 @@ private fun ColorOption(color: Long, selected: Boolean, onClick: () -> Unit) {
                 .border(2.dp, borderColor, CircleShape)
                 .padding(4.dp)
                 .background(Color(color), CircleShape)
+                // 밝은 색도 라이트 배경에서 모양이 보이게 얇은 외곽선을 두른다
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
         )
     }
 }

@@ -15,7 +15,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
-private val LightColorScheme = lightColorScheme(
+// 색 대비 테스트(ColorContrastTest)가 실제 값을 검사하도록 internal로 둔다
+internal val LightColorScheme = lightColorScheme(
     primary = GreenPrimaryLight,
     onPrimary = GreenOnPrimaryLight,
     primaryContainer = GreenPrimaryContainerLight,
@@ -46,7 +47,7 @@ private val LightColorScheme = lightColorScheme(
     surfaceContainerHighest = SurfaceContainerHighestLight
 )
 
-private val DarkColorScheme = darkColorScheme(
+internal val DarkColorScheme = darkColorScheme(
     primary = GreenPrimaryDark,
     onPrimary = GreenOnPrimaryDark,
     primaryContainer = GreenPrimaryContainerDark,
@@ -88,9 +89,9 @@ data class CashNoteColors(
     val warning: Color
 )
 
-private val LightCashNoteColors =
+internal val LightCashNoteColors =
     CashNoteColors(income = IncomeLight, expense = ExpenseLight, warning = WarningLight)
-private val DarkCashNoteColors =
+internal val DarkCashNoteColors =
     CashNoteColors(income = IncomeDark, expense = ExpenseDark, warning = WarningDark)
 
 private val LocalCashNoteColors = staticCompositionLocalOf { LightCashNoteColors }
