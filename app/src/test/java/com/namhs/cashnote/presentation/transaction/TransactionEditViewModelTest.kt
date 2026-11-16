@@ -10,6 +10,7 @@ import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.usecase.AddTransactionUseCase
 import com.namhs.cashnote.domain.usecase.GetCategoriesUseCase
+import com.namhs.cashnote.domain.usecase.GetDefaultCurrencyUseCase
 import com.namhs.cashnote.domain.usecase.GetExchangeRatesUseCase
 import com.namhs.cashnote.domain.usecase.GetTransactionUseCase
 import com.namhs.cashnote.domain.usecase.ObserveNetworkStatusUseCase
@@ -18,6 +19,7 @@ import com.namhs.cashnote.domain.usecase.UpdateTransactionUseCase
 import com.namhs.cashnote.testing.FakeCategoryRepository
 import com.namhs.cashnote.testing.FakeExchangeRateRepository
 import com.namhs.cashnote.testing.FakeNetworkMonitor
+import com.namhs.cashnote.testing.FakeSettingsRepository
 import com.namhs.cashnote.testing.FakeTransactionRepository
 import com.namhs.cashnote.testing.MainDispatcherRule
 import java.io.IOException
@@ -67,6 +69,7 @@ class TransactionEditViewModelTest {
     private val categoryRepository = FakeCategoryRepository(listOf(food, transport, salary))
     private val exchangeRateRepository = FakeExchangeRateRepository()
     private val networkMonitor = FakeNetworkMonitor()
+    private val settingsRepository = FakeSettingsRepository()
 
     // 초기 상태
 
@@ -440,6 +443,64 @@ class TransactionEditViewModelTest {
         assertEquals("12", TransactionEditViewModel.sanitizeAmount("12.5", isForeign = false))
     }
 
+    // 기본 통화
+
+    @Test
+    fun init_newTransaction_defaultKrw_startsWithKrw() {
+        exchangeRateRepository.rates.value = listOf(usd)
+
+        val state = viewModel().uiState.value
+
+        assertNull(state.currencyCode)
+        assertNull(state.appliedRate)
+    }
+
+    @Test
+    fun init_newTransaction_startsWithDefaultCurrency() {
+        exchangeRateRepository.rates.value = listOf(usd)
+        settingsRepository.defaultCurrency.value = "USD"
+
+        val state = viewModel().uiState.value
+
+        assertEquals("USD", state.currencyCode)
+        assertEquals(0, usd.ratePerUnit.compareTo(state.appliedRate))
+        assertEquals(friday, state.rateDate)
+    }
+
+    @Test
+    fun init_newTransaction_defaultCurrencyWithoutRate_isRateUnavailable() {
+        // 기본 통화의 환율을 아직 못 받았으면 환율 없음 안내가 뜬다
+        exchangeRateRepository.rates.value = listOf(usd)
+        settingsRepository.defaultCurrency.value = "EUR"
+
+        val state = viewModel().uiState.value
+
+        assertEquals("EUR", state.currencyCode)
+        assertTrue(state.isRateUnavailable)
+    }
+
+    @Test
+    fun init_editMode_keepsTransactionCurrency() {
+        settingsRepository.defaultCurrency.value = "USD"
+
+        val state = viewModel(transactionId = existing.id).uiState.value
+
+        // 원화로 저장한 거래는 기본 통화가 USD여도 원화로 연다
+        assertNull(state.currencyCode)
+        assertEquals("12500", state.amountInput)
+    }
+
+    @Test
+    fun defaultCurrencyChangedLater_doesNotChangeInputCurrency() {
+        exchangeRateRepository.rates.value = listOf(usd, jpy)
+        settingsRepository.defaultCurrency.value = "USD"
+        val viewModel = viewModel()
+
+        settingsRepository.defaultCurrency.value = "JPY"
+
+        assertEquals("USD", viewModel.uiState.value.currencyCode)
+    }
+
     // 오프라인 안내
 
     @Test
@@ -527,6 +588,7 @@ class TransactionEditViewModelTest {
         updateTransaction = UpdateTransactionUseCase(transactionRepository),
         getExchangeRates = GetExchangeRatesUseCase(exchangeRateRepository),
         refreshExchangeRates = RefreshExchangeRatesUseCase(exchangeRateRepository),
-        observeNetworkStatus = ObserveNetworkStatusUseCase(networkMonitor)
+        observeNetworkStatus = ObserveNetworkStatusUseCase(networkMonitor),
+        getDefaultCurrency = GetDefaultCurrencyUseCase(settingsRepository)
     )
 }
