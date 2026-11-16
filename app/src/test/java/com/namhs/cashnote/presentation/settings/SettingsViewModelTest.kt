@@ -129,6 +129,28 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun privacyPolicyClicked_opensPrivacyPolicy() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(SettingsIntent.PrivacyPolicyClicked)
+
+            assertEquals(SettingsSideEffect.OpenPrivacyPolicy, awaitItem())
+        }
+    }
+
+    @Test
+    fun browserUnavailable_showsUrl() = runTest {
+        val viewModel = viewModel()
+
+        viewModel.sideEffect.test {
+            viewModel.onIntent(SettingsIntent.BrowserUnavailable)
+
+            assertEquals(SettingsSideEffect.ShowBrowserUnavailable, awaitItem())
+        }
+    }
+
+    @Test
     fun ossLicensesClicked_navigatesToOssLicenses() = runTest {
         val viewModel = viewModel()
 
