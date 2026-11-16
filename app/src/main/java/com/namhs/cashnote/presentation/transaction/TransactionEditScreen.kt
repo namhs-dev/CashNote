@@ -50,6 +50,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -58,7 +60,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.Category
 import com.namhs.cashnote.domain.model.ExchangeRate
+import com.namhs.cashnote.domain.model.PaymentMethod
 import com.namhs.cashnote.domain.model.TransactionType
+import com.namhs.cashnote.presentation.component.labelRes
 import com.namhs.cashnote.presentation.theme.CashNoteTheme
 import java.math.BigDecimal
 import java.text.NumberFormat
@@ -168,6 +172,11 @@ private fun TransactionEditForm(
         TypeSelector(
             selected = state.type,
             onSelect = { onIntent(TransactionEditIntent.TypeChanged(it)) }
+        )
+
+        PaymentMethodSelector(
+            selected = state.paymentMethod,
+            onSelect = { onIntent(TransactionEditIntent.PaymentMethodSelected(it)) }
         )
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -379,6 +388,34 @@ private fun TypeSelector(selected: TransactionType, onSelect: (TransactionType) 
         }
     }
 }
+
+/** 카드·현금·기타. 자주 쓰는 순서로 카드를 앞에 둔다 */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PaymentMethodSelector(selected: PaymentMethod, onSelect: (PaymentMethod) -> Unit) {
+    val label = stringResource(R.string.transaction_payment_method_label)
+    SingleChoiceSegmentedButtonRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { contentDescription = label }
+    ) {
+        PAYMENT_METHOD_OPTIONS.forEachIndexed { index, method ->
+            SegmentedButton(
+                selected = method == selected,
+                onClick = { onSelect(method) },
+                shape = SegmentedButtonDefaults.itemShape(
+                    index = index,
+                    count = PAYMENT_METHOD_OPTIONS.size
+                )
+            ) {
+                Text(stringResource(method.labelRes()))
+            }
+        }
+    }
+}
+
+private val PAYMENT_METHOD_OPTIONS =
+    listOf(PaymentMethod.CARD, PaymentMethod.CASH, PaymentMethod.OTHER)
 
 @Composable
 private fun CategorySelector(

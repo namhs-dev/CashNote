@@ -17,6 +17,8 @@
     <string name="home_empty_description">+ 버튼으로 내역을 추가해 보세요</string>
     <string name="home_deleted_message">내역을 삭제했습니다</string>
     <string name="home_delete_failed">삭제하지 못했습니다</string>
+    <!-- 목록 항목의 둘째 줄. %1$s: 결제수단, %2$s: 메모 -->
+    <string name="home_payment_method_with_memo">%1$s · %2$s</string>
     <string name="home_export">CSV로 내보내기</string>
     <string name="home_export_chooser_title">내역 내보내기</string>
     <string name="home_export_empty">내보낼 내역이 없습니다</string>
@@ -92,6 +94,11 @@
     <string name="transaction_category_error">카테고리를 선택해 주세요</string>
     <string name="transaction_date_label">날짜</string>
     <string name="transaction_memo_label">메모</string>
+    <string name="transaction_payment_method_label">결제수단</string>
+    <string name="payment_method_card">카드</string>
+    <string name="payment_method_cash">현금</string>
+    <!-- 상품권·포인트·기프티콘 등 -->
+    <string name="payment_method_other">기타</string>
     <string name="action_save">저장</string>
     <string name="action_confirm">확인</string>
     <string name="action_cancel">취소</string>

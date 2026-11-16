@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.namhs.cashnote.domain.model.PaymentMethod
 import com.namhs.cashnote.domain.model.TransactionType
 import java.math.BigDecimal
 import java.time.Instant
@@ -53,5 +54,8 @@ data class TransactionEntity(
     val foreignAmount: BigDecimal? = null,
     /** 저장 시점에 적용한 환율(외화 1단위당 원화). 원화 거래면 null */
     @ColumnInfo(name = "applied_rate")
-    val appliedRate: BigDecimal? = null
+    val appliedRate: BigDecimal? = null,
+    /** 결제수단 enum 이름. v5에서 추가했고, 그 전에 저장한 거래는 OTHER로 채운다 */
+    @ColumnInfo(name = "payment_method", defaultValue = "OTHER")
+    val paymentMethod: PaymentMethod = PaymentMethod.OTHER
 )

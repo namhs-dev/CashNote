@@ -61,11 +61,13 @@ import com.namhs.cashnote.R
 import com.namhs.cashnote.domain.model.BudgetStatus
 import com.namhs.cashnote.domain.model.Category
 import com.namhs.cashnote.domain.model.MonthlySummary
+import com.namhs.cashnote.domain.model.PaymentMethod
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import com.namhs.cashnote.domain.model.TransactionWithCategory
 import com.namhs.cashnote.presentation.component.MonthSelector
 import com.namhs.cashnote.presentation.component.formatAmount
+import com.namhs.cashnote.presentation.component.labelRes
 import com.namhs.cashnote.presentation.theme.CashNoteTheme
 import java.time.Instant
 import java.time.LocalDate
@@ -362,15 +364,23 @@ private fun TransactionRow(item: TransactionWithCategory, onClick: () -> Unit) {
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(text = item.category.name, style = MaterialTheme.typography.bodyLarge)
-            if (transaction.memo.isNotEmpty()) {
-                Text(
-                    text = transaction.memo,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            // 결제수단은 늘 보이고, 메모가 있으면 뒤에 붙인다. 길면 메모 쪽이 잘린다
+            val paymentLabel = stringResource(transaction.paymentMethod.labelRes())
+            Text(
+                text = if (transaction.memo.isEmpty()) {
+                    paymentLabel
+                } else {
+                    stringResource(
+                        R.string.home_payment_method_with_memo,
+                        paymentLabel,
+                        transaction.memo
+                    )
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
         Spacer(Modifier.width(16.dp))
         AmountText(amount = transaction.amount, type = transaction.type)
@@ -414,19 +424,26 @@ private fun EmptyContent(modifier: Modifier = Modifier) {
 private val previewFood = Category(1, "식비", TransactionType.EXPENSE, "food", 0xFFE57373)
 private val previewSalary = Category(2, "급여", TransactionType.INCOME, "salary", 0xFF64B5F6)
 
-private fun previewItem(id: Long, amount: Long, category: Category, memo: String, day: Int) =
-    TransactionWithCategory(
-        transaction = Transaction(
-            id = id,
-            amount = amount,
-            type = category.type,
-            categoryId = category.id,
-            memo = memo,
-            date = LocalDate.of(2026, 11, day),
-            createdAt = Instant.EPOCH
-        ),
-        category = category
-    )
+private fun previewItem(
+    id: Long,
+    amount: Long,
+    category: Category,
+    memo: String,
+    day: Int,
+    paymentMethod: PaymentMethod = PaymentMethod.CARD
+) = TransactionWithCategory(
+    transaction = Transaction(
+        id = id,
+        amount = amount,
+        type = category.type,
+        categoryId = category.id,
+        memo = memo,
+        date = LocalDate.of(2026, 11, day),
+        createdAt = Instant.EPOCH,
+        paymentMethod = paymentMethod
+    ),
+    category = category
+)
 
 @Preview(name = "목록", uiMode = Configuration.UI_MODE_NIGHT_NO)
 @Composable
@@ -441,12 +458,12 @@ private fun HomeScreenPreview() {
                         LocalDate.of(2026, 11, 10),
                         listOf(
                             previewItem(1, 12_500, previewFood, "점심", 10),
-                            previewItem(2, 3_000_000, previewSalary, "", 10)
+                            previewItem(2, 3_000_000, previewSalary, "", 10, PaymentMethod.OTHER)
                         )
                     ),
                     DailyTransactions(
                         LocalDate.of(2026, 11, 9),
-                        listOf(previewItem(3, 8_000, previewFood, "", 9))
+                        listOf(previewItem(3, 8_000, previewFood, "", 9, PaymentMethod.CASH))
                     )
                 ),
                 summary = MonthlySummary(income = 3_000_000, expense = 20_500),

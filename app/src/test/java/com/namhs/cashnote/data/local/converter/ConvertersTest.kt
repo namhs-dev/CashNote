@@ -1,5 +1,6 @@
 package com.namhs.cashnote.data.local.converter
 
+import com.namhs.cashnote.domain.model.PaymentMethod
 import com.namhs.cashnote.domain.model.TransactionType
 import java.math.BigDecimal
 import java.time.Instant
@@ -69,6 +70,25 @@ class ConvertersTest {
     fun transactionType_storedAsName() {
         assertEquals("INCOME", converters.fromTransactionType(TransactionType.INCOME))
         assertEquals("EXPENSE", converters.fromTransactionType(TransactionType.EXPENSE))
+    }
+
+    // PaymentMethod
+
+    @Test
+    fun paymentMethod_roundTrip() {
+        PaymentMethod.entries.forEach { method ->
+            val restored = converters.toPaymentMethod(converters.fromPaymentMethod(method))
+
+            assertEquals(method, restored)
+        }
+    }
+
+    @Test
+    fun paymentMethod_storedAsName() {
+        // migration 기본값 'OTHER'와 같은 문자열이어야 기존 행을 읽을 수 있다
+        assertEquals("CASH", converters.fromPaymentMethod(PaymentMethod.CASH))
+        assertEquals("CARD", converters.fromPaymentMethod(PaymentMethod.CARD))
+        assertEquals("OTHER", converters.fromPaymentMethod(PaymentMethod.OTHER))
     }
 
     // YearMonth

@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.namhs.cashnote.data.repository.mapper.toDomain
 import com.namhs.cashnote.data.repository.mapper.toEntity
 import com.namhs.cashnote.domain.model.ForeignAmount
+import com.namhs.cashnote.domain.model.PaymentMethod
 import java.math.BigDecimal
 import java.time.LocalDate
 import kotlinx.coroutines.runBlocking
@@ -112,7 +113,45 @@ class MigrationTest {
     }
 
     @Test
-    fun migrate1To4_allMigrationsInOrder() {
+    fun migrate4To5_fillsExistingTransactionsAsOther() {
+        // v4: 원화 거래 1건과 외화 거래 1건
+        helper.createDatabase(TEST_DB, 4).use { db ->
+            db.execSQL(
+                "INSERT INTO categories (id, name, type, icon, color) " +
+                    "VALUES (1, '식비', 'EXPENSE', 'food', 4293227379)"
+            )
+            db.execSQL(
+                "INSERT INTO transactions " +
+                    "(id, amount, type, category_id, memo, date, created_at) " +
+                    "VALUES (1, 12500, 'EXPENSE', 1, '점심', 20401, 1762657200000)"
+            )
+            db.execSQL(
+                "INSERT INTO transactions " +
+                    "(id, amount, type, category_id, memo, date, created_at, " +
+                    "currency_code, foreign_amount, applied_rate) " +
+                    "VALUES (2, 18131, 'EXPENSE', 1, '커피', 20401, 1762657200000, " +
+                    "'USD', '12.50', '1450.5')"
+            )
+        }
+
+        // v5로 올리면서 스키마가 5.json과 같은지 검증한다. 결제수단을 모르는 기존 거래는 OTHER다
+        helper.runMigrationsAndValidate(TEST_DB, 5, true).use { db ->
+            db.query("SELECT id, payment_method, currency_code FROM transactions ORDER BY id")
+                .use { cursor ->
+                    assertEquals(2, cursor.count)
+                    cursor.moveToFirst()
+                    assertEquals("OTHER", cursor.getString(1))
+                    assertTrue(cursor.isNull(2))
+                    cursor.moveToNext()
+                    assertEquals("OTHER", cursor.getString(1))
+                    // 외화 컬럼은 그대로 남는다
+                    assertEquals("USD", cursor.getString(2))
+                }
+        }
+    }
+
+    @Test
+    fun migrate1ToLatest_allMigrationsInOrder() {
         // v1(첫 출시 스키마)에서 최신 버전까지 한 번에 올리는 실제 업데이트 경로
         helper.createDatabase(TEST_DB, 1).use { db ->
             db.execSQL(
@@ -126,12 +165,15 @@ class MigrationTest {
             )
         }
 
-        helper.runMigrationsAndValidate(TEST_DB, 4, true).use { db ->
-            db.query("SELECT amount, currency_code FROM transactions WHERE id = 1").use { cursor ->
+        helper.runMigrationsAndValidate(TEST_DB, LATEST_VERSION, true).use { db ->
+            db.query(
+                "SELECT amount, currency_code, payment_method FROM transactions WHERE id = 1"
+            ).use { cursor ->
                 assertEquals(1, cursor.count)
                 cursor.moveToFirst()
                 assertEquals(12_500L, cursor.getLong(0))
                 assertTrue(cursor.isNull(1))
+                assertEquals("OTHER", cursor.getString(2))
             }
             db.query("SELECT COUNT(*) FROM budgets").use { cursor ->
                 cursor.moveToFirst()
@@ -158,25 +200,33 @@ class MigrationTest {
                     "VALUES (1, 12500, 'EXPENSE', 1, '점심', 20401, 1762657200000)"
             )
         }
-        helper.runMigrationsAndValidate(TEST_DB, 4, true).close()
+        helper.runMigrationsAndValidate(TEST_DB, LATEST_VERSION, true).close()
 
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val database = Room.databaseBuilder(context, CashNoteDatabase::class.java, TEST_DB).build()
         try {
             val dao = database.transactionDao()
 
-            // v1에서 넘어온 거래는 원화 거래로 읽힌다
+            // v1에서 넘어온 거래는 결제수단을 모르는 원화 거래로 읽힌다
             val migrated = dao.getById(1)?.toDomain()
             assertEquals(12_500L, migrated?.amount)
             assertEquals(LocalDate.ofEpochDay(20401), migrated?.date)
             assertNull(migrated?.foreign)
+            assertEquals(PaymentMethod.OTHER, migrated?.paymentMethod)
 
-            // 마이그레이션된 DB에 외화 거래를 저장하고 그대로 읽힌다
+            // 마이그레이션된 DB에 카드로 낸 외화 거래를 저장하고 그대로 읽힌다
             val usd = ForeignAmount("USD", BigDecimal("12.50"), BigDecimal("1450.5"))
             val id = dao.insert(
-                migrated!!.copy(id = 0, amount = usd.toKrw(), foreign = usd).toEntity()
+                migrated!!.copy(
+                    id = 0,
+                    amount = usd.toKrw(),
+                    foreign = usd,
+                    paymentMethod = PaymentMethod.CARD
+                ).toEntity()
             )
-            assertEquals(usd, dao.getById(id)?.toDomain()?.foreign)
+            val saved = dao.getById(id)?.toDomain()
+            assertEquals(usd, saved?.foreign)
+            assertEquals(PaymentMethod.CARD, saved?.paymentMethod)
         } finally {
             database.close()
         }
@@ -184,5 +234,8 @@ class MigrationTest {
 
     private companion object {
         const val TEST_DB = "migration-test"
+
+        /** CashNoteDatabase의 version. 올리면 같이 올린다 */
+        const val LATEST_VERSION = 5
     }
 }

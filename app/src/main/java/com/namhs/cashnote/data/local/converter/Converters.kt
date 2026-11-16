@@ -1,6 +1,7 @@
 package com.namhs.cashnote.data.local.converter
 
 import androidx.room.TypeConverter
+import com.namhs.cashnote.domain.model.PaymentMethod
 import com.namhs.cashnote.domain.model.TransactionType
 import java.math.BigDecimal
 import java.time.Instant
@@ -13,6 +14,7 @@ import java.time.YearMonth
  * - LocalDate: epochDay(1970-01-01부터의 일 수) Long
  * - Instant: epoch millis Long (밀리초 미만은 버린다)
  * - TransactionType: enum 이름 String
+ * - PaymentMethod: enum 이름 String
  * - YearMonth: epoch month(year × 12 + month − 1) Int. 크기 비교가 곧 월 순서다
  * - BigDecimal: 지수 표기 없는 문자열(toPlainString). 소수 자릿수까지 그대로 보존한다
  */
@@ -40,6 +42,12 @@ class Converters {
 
     @TypeConverter
     fun toTransactionType(name: String): TransactionType = TransactionType.valueOf(name)
+
+    @TypeConverter
+    fun fromPaymentMethod(method: PaymentMethod): String = method.name
+
+    @TypeConverter
+    fun toPaymentMethod(name: String): PaymentMethod = PaymentMethod.valueOf(name)
 
     @TypeConverter
     fun fromYearMonth(month: YearMonth): Int = month.year * 12 + month.monthValue - 1

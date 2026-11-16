@@ -19,7 +19,8 @@ fun TransactionEntity.toDomain(): Transaction = Transaction(
     memo = memo,
     date = date,
     createdAt = createdAt,
-    foreign = toForeignAmount()
+    foreign = toForeignAmount(),
+    paymentMethod = paymentMethod
 )
 
 fun Transaction.toEntity(): TransactionEntity = TransactionEntity(
@@ -32,7 +33,8 @@ fun Transaction.toEntity(): TransactionEntity = TransactionEntity(
     createdAt = createdAt,
     currencyCode = foreign?.currencyCode,
     foreignAmount = foreign?.amount,
-    appliedRate = foreign?.appliedRate
+    appliedRate = foreign?.appliedRate,
+    paymentMethod = paymentMethod
 )
 
 // 외화 컬럼 셋이 모두 있어야 외화 거래로 본다. 하나라도 비면 원화 거래로 취급한다

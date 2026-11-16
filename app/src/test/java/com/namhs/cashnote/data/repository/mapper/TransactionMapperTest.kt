@@ -2,6 +2,7 @@ package com.namhs.cashnote.data.repository.mapper
 
 import com.namhs.cashnote.data.local.entity.TransactionEntity
 import com.namhs.cashnote.domain.model.ForeignAmount
+import com.namhs.cashnote.domain.model.PaymentMethod
 import com.namhs.cashnote.domain.model.Transaction
 import com.namhs.cashnote.domain.model.TransactionType
 import java.math.BigDecimal
@@ -20,7 +21,9 @@ class TransactionMapperTest {
         categoryId = 3,
         memo = "점심",
         date = LocalDate.of(2026, 11, 9),
-        createdAt = Instant.parse("2026-11-09T03:15:30.123Z")
+        createdAt = Instant.parse("2026-11-09T03:15:30.123Z"),
+        // 기본값(OTHER)이 아닌 값을 둬야 변환에서 빠뜨렸을 때 잡힌다
+        paymentMethod = PaymentMethod.CARD
     )
 
     private val domain = Transaction(
@@ -30,8 +33,18 @@ class TransactionMapperTest {
         categoryId = 3,
         memo = "점심",
         date = LocalDate.of(2026, 11, 9),
-        createdAt = Instant.parse("2026-11-09T03:15:30.123Z")
+        createdAt = Instant.parse("2026-11-09T03:15:30.123Z"),
+        paymentMethod = PaymentMethod.CARD
     )
+
+    @Test
+    fun paymentMethod_roundTripsEveryValue() {
+        PaymentMethod.entries.forEach { method ->
+            val restored = domain.copy(paymentMethod = method).toEntity().toDomain()
+
+            assertEquals(method, restored.paymentMethod)
+        }
+    }
 
     @Test
     fun toDomain_mapsAllFields() {
