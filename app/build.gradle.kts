@@ -9,6 +9,10 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.aboutlibraries.android)
+    // app/google-services.json이 있어야 한다(커밋하지 않음, CI는 Secret으로 만든다)
+    alias(libs.plugins.google.services)
+    // release 빌드의 R8 매핑 파일을 Crashlytics에 올려 난독화된 스택트레이스를 복원한다
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 // 환율 API 키. CI는 환경 변수(GitHub Secrets), 로컬은 local.properties에서 읽는다.
@@ -40,7 +44,13 @@ android {
     }
 
     buildTypes {
+        // Crashlytics 수집 여부. AndroidManifest의 firebase_crashlytics_collection_enabled에 들어간다.
+        // 개발 중 크래시가 콘솔에 섞이지 않도록 debug는 끈다
+        debug {
+            manifestPlaceholders["crashlyticsCollectionEnabled"] = "false"
+        }
         release {
+            manifestPlaceholders["crashlyticsCollectionEnabled"] = "true"
             // R8로 앱 코드와 모든 라이브러리를 줄이고 난독화한다(packageScope 기본값 "**").
             // Retrofit·kotlinx-serialization·Room·Hilt·WorkManager는 라이브러리가 함께 배포하는 keep 규칙으로 충분해
             // 앱 전용 규칙은 두지 않는다 (#44: release 빌드를 실기기에서 API·DB·화면 이동까지 확인)
@@ -90,6 +100,8 @@ dependencies {
     ksp(libs.androidx.hilt.compiler)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.aboutlibraries.compose.m3)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
     implementation(libs.retrofit)
