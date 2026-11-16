@@ -1,7 +1,11 @@
 package com.namhs.cashnote.data.repository
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import com.namhs.cashnote.domain.model.BudgetLevel
+import com.namhs.cashnote.domain.model.NotificationSettings
 import java.io.File
+import java.time.LocalTime
+import java.time.YearMonth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -54,5 +58,63 @@ class SettingsRepositoryImplTest {
         repository.setDefaultCurrency(null)
 
         assertNull(repository.observeDefaultCurrency().first())
+    }
+
+    // 알림 설정
+
+    @Test
+    fun notificationSettings_initiallyAllOffAt2100() = runTest {
+        assertEquals(
+            NotificationSettings(
+                reminderEnabled = false,
+                reminderTime = LocalTime.of(21, 0),
+                budgetAlertEnabled = false
+            ),
+            repository().observeNotificationSettings().first()
+        )
+    }
+
+    @Test
+    fun notificationSettings_savesEachValue() = runTest {
+        val repository = repository()
+
+        repository.setReminderEnabled(true)
+        repository.setReminderTime(LocalTime.of(8, 30, 45))
+        repository.setBudgetAlertEnabled(true)
+
+        // 초는 버리고 분까지만 저장한다
+        assertEquals(
+            NotificationSettings(true, LocalTime.of(8, 30), true),
+            repository.observeNotificationSettings().first()
+        )
+    }
+
+    // 예산 알림 기록
+
+    @Test
+    fun budgetAlertedLevel_initiallyNull() = runTest {
+        assertNull(repository().getBudgetAlertedLevel(YearMonth.of(2026, 11)))
+    }
+
+    @Test
+    fun budgetAlertedLevel_returnsLevelForSameMonthOnly() = runTest {
+        val repository = repository()
+
+        repository.setBudgetAlertedLevel(YearMonth.of(2026, 11), BudgetLevel.WARNING)
+
+        assertEquals(BudgetLevel.WARNING, repository.getBudgetAlertedLevel(YearMonth.of(2026, 11)))
+        // 다음 달에는 다시 처음부터 알린다
+        assertNull(repository.getBudgetAlertedLevel(YearMonth.of(2026, 12)))
+    }
+
+    @Test
+    fun budgetAlertedLevel_newMonthOverwritesOldRecord() = runTest {
+        val repository = repository()
+        repository.setBudgetAlertedLevel(YearMonth.of(2026, 11), BudgetLevel.EXCEEDED)
+
+        repository.setBudgetAlertedLevel(YearMonth.of(2026, 12), BudgetLevel.WARNING)
+
+        assertNull(repository.getBudgetAlertedLevel(YearMonth.of(2026, 11)))
+        assertEquals(BudgetLevel.WARNING, repository.getBudgetAlertedLevel(YearMonth.of(2026, 12)))
     }
 }
