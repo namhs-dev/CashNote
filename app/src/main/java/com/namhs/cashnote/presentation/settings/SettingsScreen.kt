@@ -161,6 +161,28 @@ fun SettingsRoute(
                     }
                 }
 
+                SettingsSideEffect.OpenPrivacyPolicy ->
+                    if (!openUrl(context, resources.getString(R.string.privacy_policy_url))) {
+                        viewModel.onIntent(SettingsIntent.BrowserUnavailable)
+                    }
+
+                // 문의 메일과 같이 주소를 보여 주고 복사할 수 있게 한다
+                SettingsSideEffect.ShowBrowserUnavailable -> launch {
+                    val url = resources.getString(R.string.privacy_policy_url)
+                    val result = snackbarHostState.showSnackbar(
+                        message = resources.getString(R.string.browser_unavailable, url),
+                        actionLabel = resources.getString(R.string.action_copy),
+                        duration = SnackbarDuration.Long
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        copyToClipboard(
+                            context,
+                            resources.getString(R.string.settings_privacy_policy),
+                            url
+                        )
+                    }
+                }
+
                 is SettingsSideEffect.ShowMessage -> launch {
                     snackbarHostState.showSnackbar(resources.getString(effect.messageRes))
                 }
@@ -223,6 +245,14 @@ private fun openContactEmail(context: Context): Boolean {
     } catch (e: ActivityNotFoundException) {
         false
     }
+}
+
+/** 웹 페이지를 기본 브라우저로 연다. 브라우저가 없으면 false (메일과 같은 이유로 예외로 판단한다) */
+private fun openUrl(context: Context, url: String): Boolean = try {
+    context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+    true
+} catch (e: ActivityNotFoundException) {
+    false
 }
 
 /** Android 13+는 복사하면 시스템이 알림을 띄워 주므로 따로 안내하지 않는다 */
@@ -299,6 +329,10 @@ fun SettingsScreen(
             ListItem(
                 headlineContent = { Text(stringResource(R.string.settings_contact)) },
                 modifier = Modifier.clickable { onIntent(SettingsIntent.ContactClicked) }
+            )
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.settings_privacy_policy)) },
+                modifier = Modifier.clickable { onIntent(SettingsIntent.PrivacyPolicyClicked) }
             )
             ListItem(
                 headlineContent = { Text(stringResource(R.string.oss_licenses_title)) },

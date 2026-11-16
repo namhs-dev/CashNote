@@ -51,6 +51,12 @@ sealed interface SettingsIntent {
     /** 메일 앱이 없어 문의 메일을 열지 못했다고 Route가 알려 준다 */
     data object ContactEmailUnavailable : SettingsIntent
 
+    /** 앱 정보의 "개인정보처리방침" */
+    data object PrivacyPolicyClicked : SettingsIntent
+
+    /** 브라우저가 없어 개인정보처리방침을 열지 못했다고 Route가 알려 준다 */
+    data object BrowserUnavailable : SettingsIntent
+
     /** 기록 리마인더 켜기/끄기 */
     data class ReminderToggled(val enabled: Boolean) : SettingsIntent
 
@@ -92,6 +98,12 @@ sealed interface SettingsSideEffect {
 
     /** 메일 앱이 없다. 문의 주소를 알려 주고 복사할 수 있게 한다 */
     data object ShowContactEmailUnavailable : SettingsSideEffect
+
+    /** 게시된 개인정보처리방침 페이지를 브라우저로 연다 */
+    data object OpenPrivacyPolicy : SettingsSideEffect
+
+    /** 브라우저가 없다. 방침 주소를 알려 주고 복사할 수 있게 한다 */
+    data object ShowBrowserUnavailable : SettingsSideEffect
 
     /** 알림을 켜려면 권한이 필요하다. Route가 권한 창을 띄우고 결과를 돌려준다 */
     data class RequestNotificationPermission(val target: NotificationTarget) :
