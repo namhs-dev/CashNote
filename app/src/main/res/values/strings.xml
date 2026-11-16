@@ -17,6 +17,10 @@
     <string name="home_empty_description">+ 버튼으로 내역을 추가해 보세요</string>
     <string name="home_deleted_message">내역을 삭제했습니다</string>
     <string name="home_delete_failed">삭제하지 못했습니다</string>
+    <string name="home_export">CSV로 내보내기</string>
+    <string name="home_export_chooser_title">내역 내보내기</string>
+    <string name="home_export_empty">내보낼 내역이 없습니다</string>
+    <string name="home_export_failed">내보내지 못했습니다. 다시 시도해 주세요</string>
     <string name="home_budget_save_failed">예산을 저장하지 못했습니다</string>
     <string name="home_budget_set">예산 설정</string>
     <string name="home_budget_edit">예산 변경</string>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider로 공유할 수 있는 폴더. 내보낸 CSV를 두는 캐시의 exports 폴더만 연다 -->
+<paths>
+    <cache-path
+        name="exports"
+        path="exports/" />
+</paths>

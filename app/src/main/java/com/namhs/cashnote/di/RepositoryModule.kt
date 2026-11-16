@@ -1,5 +1,6 @@
 package com.namhs.cashnote.di
 
+import com.namhs.cashnote.data.file.ExportFileRepositoryImpl
 import com.namhs.cashnote.data.network.ConnectivityNetworkMonitor
 import com.namhs.cashnote.data.repository.BudgetRepositoryImpl
 import com.namhs.cashnote.data.repository.CategoryRepositoryImpl
@@ -9,6 +10,7 @@ import com.namhs.cashnote.data.repository.TransactionRepositoryImpl
 import com.namhs.cashnote.domain.repository.BudgetRepository
 import com.namhs.cashnote.domain.repository.CategoryRepository
 import com.namhs.cashnote.domain.repository.ExchangeRateRepository
+import com.namhs.cashnote.domain.repository.ExportFileRepository
 import com.namhs.cashnote.domain.repository.NetworkMonitor
 import com.namhs.cashnote.domain.repository.SettingsRepository
 import com.namhs.cashnote.domain.repository.TransactionRepository
@@ -41,6 +43,9 @@ abstract class RepositoryModule {
 
     @Binds
     abstract fun bindSettingsRepository(impl: SettingsRepositoryImpl): SettingsRepository
+
+    @Binds
+    abstract fun bindExportFileRepository(impl: ExportFileRepositoryImpl): ExportFileRepository
 
     @Binds
     abstract fun bindNetworkMonitor(impl: ConnectivityNetworkMonitor): NetworkMonitor
