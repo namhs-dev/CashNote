@@ -27,6 +27,12 @@ val exchangeRateApiKey: String =
         ?: localProperties.getProperty("EXCHANGE_RATE_API_KEY")
         ?: ""
 
+// release 업로드 키 서명 정보. 루트의 keystore.properties(커밋하지 않음)에서 읽는다.
+// 파일이 없으면 서명 없이 빌드되게 둔다(CI는 release를 빌드하지 않는다) (#62)
+val keystoreProperties = Properties().apply {
+    rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+}
+
 android {
     namespace = "com.namhs.cashnote"
     compileSdk {
@@ -38,11 +44,22 @@ android {
         minSdk = 26
         targetSdk = 37
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "EXCHANGE_RATE_API_KEY", "\"$exchangeRateApiKey\"")
+    }
+
+    signingConfigs {
+        if (!keystoreProperties.isEmpty) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -53,6 +70,7 @@ android {
         }
         release {
             manifestPlaceholders["crashlyticsCollectionEnabled"] = "true"
+            signingConfig = signingConfigs.findByName("release")
             // R8로 앱 코드와 모든 라이브러리를 줄이고 난독화한다(packageScope 기본값 "**").
             // Retrofit·kotlinx-serialization·Room·Hilt·WorkManager는 라이브러리가 함께 배포하는 keep 규칙으로 충분해
             // 앱 전용 규칙은 두지 않는다 (#44: release 빌드를 실기기에서 API·DB·화면 이동까지 확인)
