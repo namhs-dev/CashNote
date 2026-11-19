@@ -1,6 +1,16 @@
-# CashNote
+# 포켓장부 (개발명 CashNote)
 
 오프라인 우선 가계부 Android 앱. 포트폴리오용 1인 프로젝트.
+
+## 이름 규칙
+- 사용자에게 보이는 앱 이름은 "포켓장부"다. 새 문자열에 CashNote를 쓰지 않는다.
+- 앱이 만드는 파일(CSV 내보내기 등)의 이름 접두어는 pocketjangbu-, 문의 메일은 namhs.dev+pocketjangbu@gmail.com이다.
+- 아래는 옛 이름이 남아 있어도 바꾸지 않는다.
+  - 패키지명 com.namhs.cashnote: Play에 올린 뒤에는 바꿀 수 없다.
+  - 클래스명(CashNoteTheme 등): 사용자에게 보이지 않는다.
+  - DB 파일 cashnote.db와 backup_rules.xml·data_extraction_rules.xml 안의 같은 경로: 바꾸면 기존 데이터와 자동 백업이 끊긴다.
+  - GitHub 저장소 이름과 개인정보처리방침 URL: 바꾸면 Play에 등록한 주소가 깨진다.
+  - 아이콘 원본 파일 이름(docs/icon/cashnote-icon*): 저장소 안 파일이라 사용자에게 보이지 않는다.
 
 ## 기술 스택
 - Kotlin, Jetpack Compose (Material3)
