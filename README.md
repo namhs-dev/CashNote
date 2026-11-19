@@ -1,8 +1,10 @@
 <p align="center">
-  <img src="docs/icon/cashnote-icon-512.png" width="96" alt="CashNote 아이콘" />
+  <img src="docs/icon/cashnote-icon-512.png" width="96" alt="포켓장부 아이콘" />
 </p>
 
-<h1 align="center">CashNote</h1>
+<h1 align="center">포켓장부</h1>
+
+<p align="center"><sub>개발명 CashNote</sub></p>
 
 <p align="center">
   회원가입 없이 바로 쓰는 오프라인 우선 가계부 Android 앱<br/>

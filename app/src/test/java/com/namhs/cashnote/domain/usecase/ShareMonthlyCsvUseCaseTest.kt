@@ -43,7 +43,7 @@ class ShareMonthlyCsvUseCaseTest {
     fun monthWithTransactions_savesFileAndReturnsUri() = runTest {
         val uri = useCase(lunch)(november)
 
-        assertEquals("content://test/cashnote-2026-11.csv", uri)
+        assertEquals("content://test/pocketjangbu-2026-11.csv", uri)
         val saved = exportFileRepository.saved.single()
         assertEquals(1, saved.rowCount)
         assertTrue(saved.content.contains("2026-11-03,지출,식비,12000,KRW,,,점심"))

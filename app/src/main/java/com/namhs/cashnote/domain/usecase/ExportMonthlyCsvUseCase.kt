@@ -25,7 +25,7 @@ class ExportMonthlyCsvUseCase @Inject constructor(
             categoryById[transaction.categoryId]?.let { TransactionWithCategory(transaction, it) }
         }
         return CsvExport(
-            fileName = "cashnote-$month.csv",
+            fileName = "pocketjangbu-$month.csv",
             content = toCsv(rows),
             rowCount = rows.size
         )

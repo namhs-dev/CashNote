@@ -58,7 +58,7 @@ class ExportMonthlyCsvUseCaseTest {
             transaction(3, LocalDate.of(2026, 10, 31), 5_000, food)
         )(YearMonth.of(2026, 11))
 
-        assertEquals("cashnote-2026-11.csv", csv.fileName)
+        assertEquals("pocketjangbu-2026-11.csv", csv.fileName)
         assertEquals(2, csv.rowCount)
         assertEquals(
             bom + header +

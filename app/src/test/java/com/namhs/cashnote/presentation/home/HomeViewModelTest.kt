@@ -403,7 +403,7 @@ class HomeViewModelTest {
             viewModel.onIntent(HomeIntent.ExportClicked)
 
             assertEquals(
-                HomeSideEffect.ShareFile("content://test/cashnote-$thisMonth.csv"),
+                HomeSideEffect.ShareFile("content://test/pocketjangbu-$thisMonth.csv"),
                 awaitItem()
             )
         }
@@ -421,7 +421,7 @@ class HomeViewModelTest {
             viewModel.onIntent(HomeIntent.ExportClicked)
 
             assertEquals(
-                HomeSideEffect.ShareFile("content://test/cashnote-$nextMonth.csv"),
+                HomeSideEffect.ShareFile("content://test/pocketjangbu-$nextMonth.csv"),
                 awaitItem()
             )
         }
