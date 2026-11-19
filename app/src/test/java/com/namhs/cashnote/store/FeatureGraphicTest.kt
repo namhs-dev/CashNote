@@ -84,7 +84,7 @@ private fun FeatureGraphic() {
             AppIcon()
             Column {
                 Text(
-                    text = "CashNote",
+                    text = "포켓장부",
                     color = Color.White,
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold

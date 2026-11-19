@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  CashNote 앱 아이콘 원본. 메모장 + 원화 기호.
+  포켓장부 앱 아이콘 원본. 메모장 + 원화 기호.
   좌표는 Android adaptive icon과 같은 108x108이다. 경로를 바꾸면
   app/src/main/res/drawable/ic_launcher_foreground.xml·ic_launcher_monochrome.xml도 같이 바꾼다.
   Play 스토어용 512 PNG는 이 파일을 512x512로 렌더한 것이다(모서리 둥글림은 Play가 적용).

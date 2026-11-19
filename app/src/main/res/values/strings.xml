@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">CashNote</string>
+    <string name="app_name">포켓장부</string>
 
     <string name="home_title">내역</string>
     <string name="home_month_title">%1$d년 %2$d월</string>
@@ -58,8 +58,8 @@
     <string name="settings_app_version">앱 버전</string>
     <string name="settings_contact">문의하기</string>
     <!-- 문의 메일 받는 주소. 언어와 상관없이 같으므로 번역하지 않는다 -->
-    <string name="support_email" translatable="false">namhs.dev+cashnote@gmail.com</string>
-    <string name="contact_email_subject">[CashNote] 문의</string>
+    <string name="support_email" translatable="false">namhs.dev+pocketjangbu@gmail.com</string>
+    <string name="contact_email_subject">[포켓장부] 문의</string>
     <!-- 문의 메일 본문. 위 빈 줄에 사용자가 쓴다.
          %1$s: 앱 버전 이름, %2$d: 버전 코드, %3$s: 제조사·모델, %4$s: Android 버전, %5$d: API 레벨 -->
     <string name="contact_email_body">\n\n---\n앱 버전: %1$s (%2$d)\n기기: %3$s\nAndroid: %4$s (API %5$d)</string>
@@ -78,7 +78,7 @@
     <string name="settings_budget_alert_description">이번 달 지출이 예산의 80%와 100%에 이르면 알려 줍니다</string>
     <string name="settings_notification_permission_denied">알림 권한이 없어 켤 수 없습니다</string>
     <string name="settings_notification_permission_title">알림을 허용해 주세요</string>
-    <string name="settings_notification_permission_text">알림을 받으려면 설정에서 CashNote의 알림을 허용해야 합니다</string>
+    <string name="settings_notification_permission_text">알림을 받으려면 설정에서 포켓장부의 알림을 허용해야 합니다</string>
     <string name="settings_notification_open_settings">설정 열기</string>
     <string name="settings_notification_blocked">알림이 꺼져 있어 받을 수 없습니다. 눌러서 설정을 여세요</string>
     <string name="category_manage_title">카테고리 관리</string>
